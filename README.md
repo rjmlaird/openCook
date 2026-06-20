@@ -1,5 +1,5 @@
-# <img src="docs/icon.png" alt="openCook icon" height="60" align="top"> openCook
-
+&nbsp; <img src="docs/icon.png" alt="openCook logo" height="60"/> &nbsp;openCook
+=========
 Open-source recipe app that turns cookbook photos into recipes, plans your week and shares the shopping list
 
 openCook is an open-source Android app (with an optional server you host yourself). Take a
