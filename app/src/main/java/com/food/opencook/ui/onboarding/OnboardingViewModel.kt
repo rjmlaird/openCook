@@ -23,10 +23,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class OnboardingStep { SERVER, HOUSEHOLD, CREATE }
+enum class OnboardingStep { MODE, SERVER, HOUSEHOLD, CREATE }
 
 data class OnboardingUiState(
-    val step: OnboardingStep = OnboardingStep.SERVER,
+    val step: OnboardingStep = OnboardingStep.MODE,
     val serverUrl: String? = null,
     val households: List<HouseholdSummaryDto> = emptyList(),
     val loadingHouseholds: Boolean = false,
@@ -68,7 +68,7 @@ class OnboardingViewModel @Inject constructor(
                     error = null,
                     pinPromptFor = null,
                     serverUrl = url,
-                    step = if (!url.isNullOrBlank()) OnboardingStep.HOUSEHOLD else OnboardingStep.SERVER,
+                    step = if (!url.isNullOrBlank()) OnboardingStep.HOUSEHOLD else OnboardingStep.MODE,
                 )
             }
             if (!url.isNullOrBlank()) {
@@ -77,6 +77,14 @@ class OnboardingViewModel @Inject constructor(
             }
         }
     }
+
+    /** "Just on this phone": skip the server entirely and use openCook offline-only. */
+    fun useLocalOnly() {
+        viewModelScope.launch { settings.setLocalOnly(true) }
+    }
+
+    /** From the mode picker: go on to choose/enter a server. */
+    fun chooseServerMode() = _state.update { it.copy(step = OnboardingStep.SERVER, error = null) }
 
     fun chooseServer(rawUrl: String) {
         val url = normalizeUrl(rawUrl) ?: run {
@@ -158,6 +166,8 @@ class OnboardingViewModel @Inject constructor(
         _state.update { it.copy(busy = false, error = null) }
         settings.setHousehold(code = dto.inviteCode, id = dto.householdId, name = dto.name)
         settings.setHouseholdSize(dto.settings.householdSize)
+        // A real household supersedes local-only mode; clear the flag so it stays accurate.
+        settings.setLocalOnly(false)
         // Pull existing household data right away — without this the first sync would
         // only happen on the next periodic tick, so a new member sees an empty app.
         syncTrigger.requestSync()
@@ -167,7 +177,8 @@ class OnboardingViewModel @Inject constructor(
         when (it.step) {
             OnboardingStep.CREATE -> it.copy(step = OnboardingStep.HOUSEHOLD, error = null)
             OnboardingStep.HOUSEHOLD -> it.copy(step = OnboardingStep.SERVER, error = null)
-            OnboardingStep.SERVER -> it
+            OnboardingStep.SERVER -> it.copy(step = OnboardingStep.MODE, error = null)
+            OnboardingStep.MODE -> it
         }
     }
 

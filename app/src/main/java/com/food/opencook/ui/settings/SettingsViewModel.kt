@@ -91,6 +91,10 @@ class SettingsViewModel @Inject constructor(
      *  freshly-joined household on the next sync round. */
     fun leaveHousehold() = viewModelScope.launch { wiper.wipeAndLeave() }
 
+    /** Leave local-only mode: with no household joined this sends the app back to
+     *  onboarding (server → household), where the offline data syncs up after joining. */
+    fun connectToServer() = viewModelScope.launch { settings.setLocalOnly(false) }
+
     fun synchronize() = run {
         _message.update { null }
         viewModelScope.launch {

@@ -36,6 +36,17 @@ class SettingsRepository @Inject constructor(
     }
 
     /**
+     * The user explicitly chose to use openCook on this device only — no server, no
+     * household. Lets the app gate past onboarding without a household (offline-first).
+     * Cleared again when a household is joined, so it always means "currently local-only".
+     */
+    val localOnly: Flow<Boolean> = dataStore.data.map { it[LOCAL_ONLY] ?: false }
+
+    suspend fun setLocalOnly(enabled: Boolean) {
+        dataStore.edit { it[LOCAL_ONLY] = enabled }
+    }
+
+    /**
      * People to cook for — a **household-wide** setting (set on the server, shared
      * across devices). Cached locally so the meal planner works offline; refreshed
      * from the server on join and on every sync.
@@ -102,6 +113,7 @@ class SettingsRepository @Inject constructor(
         val HOUSEHOLD_NAME = stringPreferencesKey("household_name")
         val HOUSEHOLD_SIZE = intPreferencesKey("household_size")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val LOCAL_ONLY = booleanPreferencesKey("local_only")
         val NODE_ID = stringPreferencesKey("node_id")
         val LAST_HLC = stringPreferencesKey("last_hlc")
     }

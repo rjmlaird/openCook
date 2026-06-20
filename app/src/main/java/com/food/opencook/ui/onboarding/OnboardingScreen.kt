@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,7 +74,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) { viewModel.onEnter() }
 
     // Hardware back walks the steps backwards instead of leaving the app.
-    BackHandler(enabled = state.step != OnboardingStep.SERVER) { viewModel.back() }
+    BackHandler(enabled = state.step != OnboardingStep.MODE) { viewModel.back() }
 
     // Onboarding renders outside MainScaffold, so unlike the main screens nothing paints a
     // background here. Surface paints colorScheme.background AND sets the matching content
@@ -93,6 +94,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
             Hero()
 
             when (state.step) {
+                OnboardingStep.MODE -> ModeStep(viewModel)
                 OnboardingStep.SERVER -> ServerStep(viewModel)
                 OnboardingStep.HOUSEHOLD -> HouseholdStep(state, viewModel)
                 OnboardingStep.CREATE -> CreateStep(state, viewModel)
@@ -154,6 +156,26 @@ private fun Hero() {
 @Composable
 private fun StepHeader(title: String) {
     Text(title, style = MaterialTheme.typography.titleLarge)
+}
+
+/** First step: pick how to use openCook — offline-only on this phone, or with a home server. */
+@Composable
+private fun ModeStep(viewModel: OnboardingViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        StepHeader(stringResource(R.string.onboarding_mode_step_title))
+        ChoiceCard(
+            icon = Icons.Outlined.Smartphone,
+            title = stringResource(R.string.onboarding_mode_local_title),
+            subtitle = stringResource(R.string.onboarding_mode_local_subtitle),
+            onClick = viewModel::useLocalOnly,
+        )
+        ChoiceCard(
+            icon = Icons.Outlined.Dns,
+            title = stringResource(R.string.onboarding_mode_server_title),
+            subtitle = stringResource(R.string.onboarding_mode_server_subtitle),
+            onClick = viewModel::chooseServerMode,
+        )
+    }
 }
 
 @Composable

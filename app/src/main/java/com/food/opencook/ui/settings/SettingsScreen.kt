@@ -108,12 +108,13 @@ fun SettingsScreen(
                 stringResource(R.string.settings_household_section_label),
                 modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.sm),
             )
-            SettingsRow(
-                icon = Icons.Outlined.Home,
-                title = state.householdName.ifBlank { "—" },
-                subtitle = stringResource(R.string.settings_household_hint),
-            )
-            if (state.householdCode.isNotBlank()) {
+            val joined = state.householdCode.isNotBlank()
+            if (joined) {
+                SettingsRow(
+                    icon = Icons.Outlined.Home,
+                    title = state.householdName.ifBlank { "—" },
+                    subtitle = stringResource(R.string.settings_household_hint),
+                )
                 val clipboard = LocalClipboardManager.current
                 val context = LocalContext.current
                 val copied = stringResource(R.string.settings_household_code_copied)
@@ -125,6 +126,16 @@ fun SettingsScreen(
                         clipboard.setText(AnnotatedString(state.householdCode))
                         Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     },
+                )
+            } else {
+                // Local-only mode: offer the documented "connect later" path. Tapping sends
+                // the app back to onboarding (server → household); local data syncs up on join.
+                SettingsRow(
+                    icon = Icons.Outlined.Dns,
+                    title = stringResource(R.string.settings_connect_server),
+                    subtitle = stringResource(R.string.settings_connect_server_hint),
+                    onClick = { viewModel.connectToServer() },
+                    showChevron = true,
                 )
             }
             SettingsRow(
@@ -141,17 +152,19 @@ fun SettingsScreen(
                     }
                 },
             )
-            SettingsRow(
-                icon = Icons.Outlined.Sync,
-                title = stringResource(R.string.settings_sync_now),
-                subtitle = syncStatusLabel(syncStatus),
-                onClick = appBar::sync,
-            )
-            SettingsRow(
-                icon = Icons.AutoMirrored.Outlined.Logout,
-                title = stringResource(R.string.settings_household_leave),
-                onClick = { showLeaveConfirm = true },
-            )
+            if (joined) {
+                SettingsRow(
+                    icon = Icons.Outlined.Sync,
+                    title = stringResource(R.string.settings_sync_now),
+                    subtitle = syncStatusLabel(syncStatus),
+                    onClick = appBar::sync,
+                )
+                SettingsRow(
+                    icon = Icons.AutoMirrored.Outlined.Logout,
+                    title = stringResource(R.string.settings_household_leave),
+                    onClick = { showLeaveConfirm = true },
+                )
+            }
 
             HorizontalDivider()
 

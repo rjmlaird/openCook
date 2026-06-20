@@ -244,6 +244,11 @@
     <!-- Onboarding -->
     <string name="onboarding_title">Willkommen bei openCook</string>
     <string name="onboarding_subtitle">Rezepte sammeln, planen und kochen – offline und ohne Konto.</string>
+    <string name="onboarding_mode_step_title">Wie möchtest du openCook nutzen?</string>
+    <string name="onboarding_mode_local_title">Nur auf diesem Handy</string>
+    <string name="onboarding_mode_local_subtitle">Rezepte, Pläne und Einkaufsliste bleiben offline auf diesem Gerät.</string>
+    <string name="onboarding_mode_server_title">Mit Heim-Server verbinden</string>
+    <string name="onboarding_mode_server_subtitle">Foto-Scan und Familien-Sync freischalten (Server im Haushalt nötig).</string>
     <string name="onboarding_server_step_title">Server wählen</string>
     <string name="onboarding_searching">Suche im Netzwerk…</string>
     <string name="onboarding_manual_hint">Nicht gefunden? Server-Adresse manuell eingeben:</string>
@@ -271,6 +276,8 @@
     <!-- Settings: household membership -->
     <string name="settings_household_current">Haushalt: %1$s</string>
     <string name="settings_household_leave">Haushalt verlassen / wechseln</string>
+    <string name="settings_connect_server">Mit Server verbinden</string>
+    <string name="settings_connect_server_hint">Foto-Scan und Familien-Sync freischalten — deine Daten bleiben erhalten.</string>
     <string name="settings_appearance_section">Darstellung</string>
     <string name="settings_dynamic_color">Material You (Systemfarben)</string>
 
