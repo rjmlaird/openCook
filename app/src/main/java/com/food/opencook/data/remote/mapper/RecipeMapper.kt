@@ -73,7 +73,9 @@ fun RecipeDto.toMappedRecipe(
             id = recipeId,
             name = name,
             description = null,
-            recipeYield = recipeYield ?: openCookServings?.let { "$it Portionen" },
+            // Keep the source yield string if the recipe carried one; otherwise leave it null
+            // and let the UI render a localized "N servings" label from the numeric servings.
+            recipeYield = recipeYield,
             servings = openCookServings,
             category = openCookCategory,
             notes = openCookNotes.filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.joinToString("\n"),

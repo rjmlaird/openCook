@@ -1,7 +1,9 @@
 package com.food.opencook.ui.onboarding
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.food.opencook.R
 import com.food.opencook.data.discovery.DiscoveredServer
 import com.food.opencook.data.discovery.ServerDiscovery
 import com.food.opencook.data.remote.BaseUrlInterceptor
@@ -15,6 +17,7 @@ import com.food.opencook.data.settings.SettingsRepository
 import com.food.opencook.repository.PantryRepository
 import com.food.opencook.sync.SyncTrigger
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +41,7 @@ data class OnboardingUiState(
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
     private val serverDiscovery: ServerDiscovery,
     private val syncApi: SyncApi,
@@ -88,7 +92,7 @@ class OnboardingViewModel @Inject constructor(
 
     fun chooseServer(rawUrl: String) {
         val url = normalizeUrl(rawUrl) ?: run {
-            _state.update { it.copy(error = "Ungültige Adresse") }
+            _state.update { it.copy(error = context.getString(R.string.onboarding_error_invalid_address)) }
             return
         }
         viewModelScope.launch {
@@ -137,7 +141,7 @@ class OnboardingViewModel @Inject constructor(
 
     fun createHousehold(name: String, size: Int, pin: String?, adminPassword: String?) {
         if (name.isBlank()) {
-            _state.update { it.copy(error = "Bitte einen Namen eingeben") }
+            _state.update { it.copy(error = context.getString(R.string.onboarding_error_name_required)) }
             return
         }
         viewModelScope.launch {
@@ -188,8 +192,8 @@ class OnboardingViewModel @Inject constructor(
     }
 
     private fun errorText(t: Throwable): String = when {
-        t.message?.contains("403") == true -> "PIN falsch."
-        t.message?.contains("Server URL not configured") == true -> "Kein Server gewählt."
-        else -> "Server nicht erreichbar."
+        t.message?.contains("403") == true -> context.getString(R.string.onboarding_error_pin_wrong)
+        t.message?.contains("Server URL not configured") == true -> context.getString(R.string.onboarding_error_no_server)
+        else -> context.getString(R.string.onboarding_error_unreachable)
     }
 }

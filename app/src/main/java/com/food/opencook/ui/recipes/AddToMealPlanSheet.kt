@@ -63,8 +63,8 @@ fun AddToMealPlanSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var replaceTarget by remember { mutableStateOf<Pair<String, PlannedDish>?>(null) }
     val today = remember { LocalDate.now().toString() }
-    val dayLabelFmt = remember { DateTimeFormatter.ofPattern("EEEE dd.MM.", Locale.GERMAN) }
-    val shortLabelFmt = remember { DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.GERMAN) }
+    val dayLabelFmt = remember { DateTimeFormatter.ofPattern("EEEE dd.MM.", Locale.getDefault()) }
+    val shortLabelFmt = remember { DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.getDefault()) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(

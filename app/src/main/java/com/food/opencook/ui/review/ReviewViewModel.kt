@@ -1,5 +1,6 @@
 package com.food.opencook.ui.review
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -19,7 +20,9 @@ import com.food.opencook.util.IngredientCorrection
 import com.food.opencook.ui.navigation.Routes
 import com.food.opencook.util.DurationFormat
 import com.food.opencook.util.Numbers
+import com.food.opencook.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -80,6 +83,7 @@ data class EditableNutrition(
 
 @HiltViewModel
 class ReviewViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val repository: RecipeRepository,
     private val suggestionRepository: SuggestionRepository,
@@ -241,8 +245,8 @@ class ReviewViewModel @Inject constructor(
             list.forEach { editable -> if (persist(editable, now) == SaveResult.Duplicate) duplicates++ }
             if (duplicates > 0) {
                 // Don't close — tell the user a same-named recipe already exists.
-                _message.value = if (duplicates == 1) "Ein Rezept mit diesem Namen existiert bereits."
-                else "$duplicates Rezepte mit bereits vergebenem Namen übersprungen."
+                _message.value = if (duplicates == 1) context.getString(R.string.review_duplicate_one)
+                else context.getString(R.string.review_duplicate_many, duplicates)
             } else {
                 onSaved()
             }
@@ -254,7 +258,9 @@ class ReviewViewModel @Inject constructor(
         val recipe = RecipeEntity(
             id = e.id,
             name = e.name.ifBlank { null },
-            recipeYield = servingsNum?.let { "$it Portionen" },
+            // Keep the numeric servings as the source of truth; the UI renders a localized
+            // "N servings" label from it (no German string baked into stored data).
+            recipeYield = null,
             servings = servingsNum,
             category = e.category.ifBlank { null },
             notes = e.notes.ifBlank { null },

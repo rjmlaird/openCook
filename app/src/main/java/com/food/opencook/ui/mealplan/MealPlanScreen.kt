@@ -322,7 +322,7 @@ private fun WeekSelector(
             val first = runCatching { LocalDate.parse(week.first().date) }.getOrNull()
             val last = runCatching { LocalDate.parse(week.last().date) }.getOrNull()
             if (first != null && last != null) {
-                val fmt = remember { DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.GERMAN) }
+                val fmt = remember { DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.getDefault()) }
                 Text(
                     text = stringResource(R.string.mealplan_week_range, first.format(fmt), last.format(fmt)),
                     style = MaterialTheme.typography.labelMedium,

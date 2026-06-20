@@ -546,7 +546,7 @@ private fun NutritionSection(
                         modifier = Modifier.weight(1f),
                     )
                     WizardTextField(
-                        label = "Eiweiß",
+                        label = stringResource(R.string.nutrition_protein),
                         value = n.protein,
                         onValueChange = { v -> viewModel.updateRecipe(index) { it.copy(nutrition = n.copy(protein = v)) } },
                         modifier = Modifier.weight(1f),
@@ -555,13 +555,13 @@ private fun NutritionSection(
                 Spacer(Modifier.height(Spacing.sm))
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     WizardTextField(
-                        label = "Fett",
+                        label = stringResource(R.string.nutrition_fat),
                         value = n.fat,
                         onValueChange = { v -> viewModel.updateRecipe(index) { it.copy(nutrition = n.copy(fat = v)) } },
                         modifier = Modifier.weight(1f),
                     )
                     WizardTextField(
-                        label = "Kohlenhydrate",
+                        label = stringResource(R.string.nutrition_carbs),
                         value = n.carbs,
                         onValueChange = { v -> viewModel.updateRecipe(index) { it.copy(nutrition = n.copy(carbs = v)) } },
                         modifier = Modifier.weight(1f),

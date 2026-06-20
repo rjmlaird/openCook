@@ -7,6 +7,8 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.StringRes
+import com.food.opencook.R
 
 /**
  * Top-level destinations for the adaptive navigation (bottom bar on phones,
@@ -14,12 +16,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
  */
 enum class TopLevelDestination(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
-    HOME("home", "Heute", Icons.Outlined.Home),
-    RECIPES("recipes", "Rezepte", Icons.AutoMirrored.Outlined.MenuBook),
-    PLAN("plan", "Plan", Icons.Outlined.CalendarMonth),
-    SHOPPING("shopping", "Einkauf", Icons.Outlined.ShoppingCart),
-    SETTINGS("settings", "Mehr", Icons.Outlined.Tune),
+    HOME("home", R.string.nav_home, Icons.Outlined.Home),
+    RECIPES("recipes", R.string.nav_recipes, Icons.AutoMirrored.Outlined.MenuBook),
+    PLAN("plan", R.string.nav_plan, Icons.Outlined.CalendarMonth),
+    SHOPPING("shopping", R.string.nav_shopping_short, Icons.Outlined.ShoppingCart),
+    SETTINGS("settings", R.string.nav_more, Icons.Outlined.Tune),
 }

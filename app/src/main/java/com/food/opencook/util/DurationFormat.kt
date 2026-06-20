@@ -1,9 +1,13 @@
 package com.food.opencook.util
 
+import java.util.Locale
+
 /**
  * Converts between schema.org ISO-8601 durations ("PT25M", "PT1H10M") and a
- * German human form ("25 Min", "1 Std 10 Min"). Storage stays ISO-8601; only the
- * UI shows/edits the friendly form. Anything that doesn't look like a duration is
+ * human form localized to the device language ("1 Std 10 Min" in German, "1 h 10 min"
+ * otherwise). Storage stays ISO-8601; only the UI shows/edits the friendly form.
+ * Parsing accepts both German ("Std/Min") and English ("h/min") units, so an edited
+ * value round-trips regardless of locale. Anything that doesn't look like a duration is
  * passed through unchanged, so user free-text is never destroyed.
  */
 object DurationFormat {
@@ -28,10 +32,11 @@ object DurationFormat {
         val match = ISO.matchEntire(iso.trim()) ?: return iso
         val hours = match.groupValues[1].toIntOrNull() ?: 0
         val minutes = match.groupValues[2].toIntOrNull() ?: 0
+        val (h, m) = if (Locale.getDefault().language == "de") "Std" to "Min" else "h" to "min"
         return when {
-            hours > 0 && minutes > 0 -> "$hours Std $minutes Min"
-            hours > 0 -> "$hours Std"
-            minutes > 0 -> "$minutes Min"
+            hours > 0 && minutes > 0 -> "$hours $h $minutes $m"
+            hours > 0 -> "$hours $h"
+            minutes > 0 -> "$minutes $m"
             else -> iso
         }
     }

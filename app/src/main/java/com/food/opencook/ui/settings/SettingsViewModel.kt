@@ -1,7 +1,9 @@
 package com.food.opencook.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.food.opencook.R
 import com.food.opencook.data.LocalDataWiper
 import com.food.opencook.data.remote.SyncApi
 import com.food.opencook.data.remote.dto.HouseholdSettings
@@ -9,6 +11,7 @@ import com.food.opencook.data.remote.dto.PatchHouseholdRequest
 import com.food.opencook.data.settings.SettingsRepository
 import com.food.opencook.sync.SyncEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +33,7 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
     private val syncApi: SyncApi,
     private val syncEngine: SyncEngine,
@@ -80,7 +84,7 @@ class SettingsViewModel @Inject constructor(
             if (id != null && code != null) {
                 runCatching {
                     syncApi.patchHousehold(id, code, PatchHouseholdRequest(settings = HouseholdSettings(clamped)))
-                }.onFailure { _message.update { "Konnte Server nicht aktualisieren — wird beim nächsten Sync nachgeholt." } }
+                }.onFailure { _message.update { context.getString(R.string.settings_msg_size_update_failed) } }
             }
         }
     }
@@ -100,12 +104,15 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _busy.update { true }
             when (val result = syncEngine.sync()) {
-                is SyncEngine.Result.Ok -> _message.update { "Synchronisiert (${result.pulled} empfangen)" }
-                SyncEngine.Result.NoHousehold -> _message.update { "Kein Haushalt — erst beitreten." }
+                is SyncEngine.Result.Ok -> _message.update { context.getString(R.string.settings_msg_synced, result.pulled) }
+                SyncEngine.Result.NoHousehold -> _message.update { context.getString(R.string.settings_msg_no_household) }
                 SyncEngine.Result.UnknownHousehold -> _message.update {
-                    "Haushalt auf dem Server nicht gefunden — evtl. neu aufgesetzt. Bitte neu beitreten."
+                    context.getString(R.string.settings_msg_household_missing)
                 }
-                is SyncEngine.Result.Failed -> _message.update { "Sync fehlgeschlagen: ${result.message}" }
+                is SyncEngine.Result.Failed -> _message.update {
+                    if (result.message.isBlank()) context.getString(R.string.settings_msg_sync_failed_generic)
+                    else context.getString(R.string.settings_msg_sync_failed, result.message)
+                }
             }
             _busy.update { false }
         }

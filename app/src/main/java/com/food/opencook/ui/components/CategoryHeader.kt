@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.food.opencook.ui.theme.Spacing
 import com.food.opencook.util.GroceryCategory
 
@@ -15,7 +16,7 @@ import com.food.opencook.util.GroceryCategory
 @Composable
 fun CategoryHeader(category: GroceryCategory, modifier: Modifier = Modifier) {
     Text(
-        "${category.emoji}  ${category.displayName}",
+        "${category.emoji}  ${stringResource(category.labelRes)}",
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier.padding(top = Spacing.md, bottom = Spacing.xs),

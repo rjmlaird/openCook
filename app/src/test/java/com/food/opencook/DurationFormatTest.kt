@@ -1,11 +1,20 @@
 package com.food.opencook
 
 import com.food.opencook.util.DurationFormat
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
+import java.util.Locale
 
 class DurationFormatTest {
+
+    private val originalLocale = Locale.getDefault()
+
+    // toHuman() localizes its unit labels to the default locale; pin it for deterministic assertions.
+    @Before fun setGerman() = Locale.setDefault(Locale.GERMAN)
+    @After fun restore() = Locale.setDefault(originalLocale)
 
     @Test
     fun isoToHuman() {
@@ -14,6 +23,16 @@ class DurationFormatTest {
         assertEquals("1 Std 10 Min", DurationFormat.toHuman("PT1H10M"))
         assertEquals("", DurationFormat.toHuman(null))
         assertEquals("", DurationFormat.toHuman(""))
+    }
+
+    @Test
+    fun isoToHumanEnglishLocale() {
+        Locale.setDefault(Locale.ENGLISH)
+        assertEquals("25 min", DurationFormat.toHuman("PT25M"))
+        assertEquals("1 h", DurationFormat.toHuman("PT1H"))
+        assertEquals("1 h 10 min", DurationFormat.toHuman("PT1H10M"))
+        // English units must still round-trip back to ISO.
+        assertEquals("PT70M", DurationFormat.toIso(DurationFormat.toHuman("PT1H10M")))
     }
 
     @Test

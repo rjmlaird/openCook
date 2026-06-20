@@ -126,7 +126,7 @@ fun RecipeDetailScreen(
     val movedTemplate = stringResource(R.string.recipe_cook_moved)
     val removedTemplate = stringResource(R.string.recipe_cook_removed)
     val undoLabel = stringResource(R.string.undo)
-    val dayFmt = remember { DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.GERMAN) }
+    val dayFmt = remember { DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.getDefault()) }
     LaunchedEffect(lastSwap) {
         val s = lastSwap ?: return@LaunchedEffect
         val movedLabel = s.movedTo?.let { runCatching { LocalDate.parse(it).format(dayFmt) }.getOrNull() }
@@ -405,10 +405,10 @@ private fun NutritionSection(data: RecipeWithDetails) {
         Text(stringResource(R.string.review_nutrition), style = MaterialTheme.typography.titleMedium)
         n.basis?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         listOfNotNull(
-            n.calories?.let { "kcal: $it" },
-            n.proteinContent?.let { "Eiweiß: $it" },
-            n.fatContent?.let { "Fett: $it" },
-            n.carbohydrateContent?.let { "Kohlenhydrate: $it" },
+            n.calories?.let { stringResource(R.string.nutrition_calories_value, it) },
+            n.proteinContent?.let { stringResource(R.string.nutrition_protein_value, it) },
+            n.fatContent?.let { stringResource(R.string.nutrition_fat_value, it) },
+            n.carbohydrateContent?.let { stringResource(R.string.nutrition_carbs_value, it) },
         ).forEach { Text(it) }
     }
 }
@@ -433,10 +433,10 @@ private fun TagChips(tags: String?) {
 @Composable
 private fun RecipeMeta(data: RecipeWithDetails) {
     val r = data.recipe
-    val servings = r.recipeYield ?: r.servings?.let { "$it Portionen" }
+    val servings = r.recipeYield ?: r.servings?.let { stringResource(R.string.wizard_summary_servings, it.toString()) }
     val times = listOfNotNull(
-        r.prepTime?.let { "Vorb. ${DurationFormat.toHuman(it)}" },
-        r.cookTime?.let { "Kochen ${DurationFormat.toHuman(it)}" },
+        r.prepTime?.let { stringResource(R.string.recipe_meta_prep, DurationFormat.toHuman(it)) },
+        r.cookTime?.let { stringResource(R.string.recipe_meta_cook, DurationFormat.toHuman(it)) },
     ).joinToString(" · ").takeIf { it.isNotEmpty() }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),

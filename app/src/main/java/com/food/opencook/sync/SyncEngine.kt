@@ -127,7 +127,8 @@ class SyncEngine @Inject constructor(
             attempt = runCatching { syncApi.sync(code, request) }
             if (attempt.exceptionOrNull().isUnknownHousehold()) return Result.UnknownHousehold
         }
-        val response = attempt.getOrNull() ?: return Result.Failed("Sync fehlgeschlagen")
+        // Empty message → the UI renders a localized generic "sync failed" (see SettingsViewModel).
+        val response = attempt.getOrNull() ?: return Result.Failed("")
 
         // Adopt household-wide state (name + settings like person count) so all
         // devices converge on it without a separate poll.

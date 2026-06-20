@@ -56,7 +56,7 @@ class MealPlanViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
-    private val labelFormat = DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.GERMAN)
+    private val labelFormat = DateTimeFormatter.ofPattern("EEE dd.MM.", Locale.getDefault())
 
     private val _selectedWeek = MutableStateFlow(WeekSelection.CURRENT)
     val selectedWeek: StateFlow<WeekSelection> = _selectedWeek.asStateFlow()

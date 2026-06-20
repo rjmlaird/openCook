@@ -1,7 +1,9 @@
 package com.food.opencook.ui.admin
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.food.opencook.R
 import com.food.opencook.data.LocalDataWiper
 import com.food.opencook.data.remote.AdminApi
 import com.food.opencook.data.remote.dto.AdminPasswordChangeDto
@@ -11,6 +13,7 @@ import com.food.opencook.data.remote.dto.RestoreRequestDto
 import com.food.opencook.data.settings.SettingsRepository
 import com.food.opencook.update.AppUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +50,7 @@ data class AdminUiState(
  */
 @HiltViewModel
 class AdminViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val adminApi: AdminApi,
     private val settings: SettingsRepository,
     private val wiper: LocalDataWiper,
@@ -67,7 +71,7 @@ class AdminViewModel @Inject constructor(
             }
             runCatching { adminApi.status() }
                 .onSuccess { s -> _state.update { it.copy(loading = false, configured = s.configured) } }
-                .onFailure { _state.update { it.copy(loading = false, error = "Server nicht erreichbar") } }
+                .onFailure { _state.update { it.copy(loading = false, error = context.getString(R.string.admin_error_unreachable)) } }
         }
     }
 
@@ -89,7 +93,7 @@ class AdminViewModel @Inject constructor(
                 loadBackups()
                 loadHouseholds()
             } else {
-                _state.update { it.copy(busy = false, error = "Falsches Passwort") }
+                _state.update { it.copy(busy = false, error = context.getString(R.string.admin_wrong_password)) }
             }
         }
     }
@@ -99,7 +103,7 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { adminApi.listBackups(pw) }
                 .onSuccess { list -> _state.update { it.copy(backups = list.backups) } }
-                .onFailure { _state.update { it.copy(error = "Backups konnten nicht geladen werden") } }
+                .onFailure { _state.update { it.copy(error = context.getString(R.string.admin_error_load_backups)) } }
         }
     }
 
@@ -107,7 +111,7 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { adminApi.households() }
                 .onSuccess { list -> _state.update { it.copy(households = list) } }
-                .onFailure { _state.update { it.copy(error = "Haushalte konnten nicht geladen werden") } }
+                .onFailure { _state.update { it.copy(error = context.getString(R.string.admin_error_load_households)) } }
         }
     }
 
@@ -120,7 +124,7 @@ class AdminViewModel @Inject constructor(
                 _state.update { it.copy(busy = false, info = "household_deleted") }
                 loadHouseholds()
             } else {
-                _state.update { it.copy(busy = false, error = "Aktion fehlgeschlagen") }
+                _state.update { it.copy(busy = false, error = context.getString(R.string.admin_error)) }
             }
         }
     }
@@ -134,7 +138,7 @@ class AdminViewModel @Inject constructor(
                     _state.update { it.copy(busy = false, info = "backup_created") }
                     loadBackups()
                 }
-                .onFailure { _state.update { it.copy(busy = false, error = "Aktion fehlgeschlagen") } }
+                .onFailure { _state.update { it.copy(busy = false, error = context.getString(R.string.admin_error)) } }
         }
     }
 
@@ -144,7 +148,7 @@ class AdminViewModel @Inject constructor(
             _state.update { it.copy(busy = true, error = null, info = null) }
             runCatching { adminApi.restore(pw, RestoreRequestDto(backupId)) }
                 .onSuccess { _state.update { it.copy(busy = false, info = "restore_done") } }
-                .onFailure { _state.update { it.copy(busy = false, error = "Aktion fehlgeschlagen") } }
+                .onFailure { _state.update { it.copy(busy = false, error = context.getString(R.string.admin_error)) } }
         }
     }
 
@@ -160,7 +164,7 @@ class AdminViewModel @Inject constructor(
             _state.update { it.copy(busy = true, error = null, info = null) }
             val ok = runCatching { adminApi.reset(pw) }.map { it.isSuccessful }.getOrDefault(false)
             if (!ok) {
-                _state.update { it.copy(busy = false, error = "Aktion fehlgeschlagen") }
+                _state.update { it.copy(busy = false, error = context.getString(R.string.admin_error)) }
                 return@launch
             }
             wiper.wipeAndLeave() // clears DB, image files and household membership

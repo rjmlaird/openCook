@@ -1,16 +1,19 @@
 package com.food.opencook.util
 
+import androidx.annotation.StringRes
+import com.food.opencook.R
+
 /** Supermarket-aisle categories for grouping the shopping list (with an emoji + display order). */
-enum class GroceryCategory(val displayName: String, val emoji: String) {
-    PRODUCE("Obst & Gemüse", "🥕"),
-    MEAT_FISH("Fleisch & Fisch", "🥩"),
-    DAIRY("Milchprodukte & Eier", "🧀"),
-    BAKERY("Brot & Backwaren", "🍞"),
-    FROZEN("Tiefkühl", "❄️"),
-    DRINKS("Getränke", "🥤"),
-    SPICES("Gewürze, Öl & Saucen", "🧂"),
-    PANTRY("Vorrat & Trocken", "🥫"),
-    OTHER("Sonstiges", "🧺"),
+enum class GroceryCategory(@StringRes val labelRes: Int, val emoji: String) {
+    PRODUCE(R.string.grocery_cat_produce, "🥕"),
+    MEAT_FISH(R.string.grocery_cat_meat_fish, "🥩"),
+    DAIRY(R.string.grocery_cat_dairy, "🧀"),
+    BAKERY(R.string.grocery_cat_bakery, "🍞"),
+    FROZEN(R.string.grocery_cat_frozen, "❄️"),
+    DRINKS(R.string.grocery_cat_drinks, "🥤"),
+    SPICES(R.string.grocery_cat_spices, "🧂"),
+    PANTRY(R.string.grocery_cat_pantry, "🥫"),
+    OTHER(R.string.grocery_cat_other, "🧺"),
 }
 
 /**

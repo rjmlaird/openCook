@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.food.opencook.BuildConfig
@@ -197,8 +198,8 @@ private fun MainScaffold() {
                     item(
                         selected = selected,
                         onClick = { navigateToTab(destination.route) },
-                        icon = { Icon(destination.icon, contentDescription = destination.label) },
-                        label = { Text(destination.label) },
+                        icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
+                        label = { Text(stringResource(destination.labelRes)) },
                     )
                 }
             },

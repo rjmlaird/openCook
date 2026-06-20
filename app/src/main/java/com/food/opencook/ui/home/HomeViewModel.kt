@@ -50,7 +50,7 @@ class HomeViewModel @Inject constructor(
 
     private val today: LocalDate = LocalDate.now()
     private val weekDates: List<String> = (0L..6L).map { today.plusDays(it).toString() }
-    private val weekdayFmt = DateTimeFormatter.ofPattern("EEEE", Locale.GERMAN)
+    private val weekdayFmt = DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
 
     val uiState: StateFlow<HomeUiState> =
         combine(
