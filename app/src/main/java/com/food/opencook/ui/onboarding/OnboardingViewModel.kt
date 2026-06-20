@@ -60,8 +60,10 @@ class OnboardingViewModel @Inject constructor(
      * Called whenever the onboarding UI (re)appears. This ViewModel is host-scoped, so
      * after leaving a household it is reused — without resetting, stale `busy=true` (left
      * over from a successful join) would keep every button disabled until an app restart.
-     * Reset transient flags; if a server is already known, jump straight to a fresh
-     * household list instead of re-asking for the server.
+     * Reset transient flags and always start at the MODE picker, so the offline
+     * ("just on this phone") choice is visible on a fresh install AND after leaving a
+     * household. A known server URL is only cached here; it's used to skip discovery in
+     * [chooseServerMode], not to skip the mode picker.
      */
     fun onEnter() {
         viewModelScope.launch {
@@ -72,12 +74,8 @@ class OnboardingViewModel @Inject constructor(
                     error = null,
                     pinPromptFor = null,
                     serverUrl = url,
-                    step = if (!url.isNullOrBlank()) OnboardingStep.HOUSEHOLD else OnboardingStep.MODE,
+                    step = OnboardingStep.MODE,
                 )
-            }
-            if (!url.isNullOrBlank()) {
-                baseUrlInterceptor.setBaseUrl(url)
-                loadHouseholds()
             }
         }
     }
@@ -87,8 +85,18 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch { settings.setLocalOnly(true) }
     }
 
-    /** From the mode picker: go on to choose/enter a server. */
-    fun chooseServerMode() = _state.update { it.copy(step = OnboardingStep.SERVER, error = null) }
+    /** From the mode picker: go to the server flow — but jump straight to the household
+     *  list when a server is already known (e.g. after leaving a household). */
+    fun chooseServerMode() {
+        val url = _state.value.serverUrl
+        if (!url.isNullOrBlank()) {
+            baseUrlInterceptor.setBaseUrl(url)
+            _state.update { it.copy(step = OnboardingStep.HOUSEHOLD, error = null) }
+            loadHouseholds()
+        } else {
+            _state.update { it.copy(step = OnboardingStep.SERVER, error = null) }
+        }
+    }
 
     fun chooseServer(rawUrl: String) {
         val url = normalizeUrl(rawUrl) ?: run {
