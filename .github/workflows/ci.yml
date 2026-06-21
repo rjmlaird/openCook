@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "zulu"
           java-version: "21"
@@ -34,10 +34,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Notes = latest commit subject + disclaimer. Written via git (not shell-
+          # interpolated) so backticks/$ in the message can't be evaluated.
+          {
+            git log -1 --pretty=format:'%s'
+            printf '\n\nLatest development build from main. May contain bugs; no automatic updates.\n'
+          } > release-notes.md
           gh release delete dev-build --yes --cleanup-tag || true
           gh release create dev-build \
             app/build/outputs/apk/debug/openCook-debug.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "openCook development build" \
-            --notes "Latest development build from main. May contain bugs; no automatic updates."
+            --notes-file release-notes.md
