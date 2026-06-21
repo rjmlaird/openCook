@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.food.opencook.BuildConfig
 import com.food.opencook.R
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.food.opencook.ui.admin.AdminScreen
 import com.food.opencook.ui.barcode.BarcodeScanScreen
@@ -154,12 +154,21 @@ private fun MainScaffold() {
         pendingShareUrl?.let { importViewModel.importFromUrl(it) }
     }
     val shareState by importViewModel.shareState.collectAsStateWithLifecycle()
+    // Resolve snackbar strings in composable scope (stringResource can't run inside the effect).
+    val shareSavedMsg = (shareState as? ShareImportState.Saved)?.let {
+        stringResource(R.string.import_share_saved, it.name)
+    }
+    val shareViewLabel = stringResource(R.string.import_share_view)
+    val shareDuplicateMsg = (shareState as? ShareImportState.Duplicate)?.let {
+        stringResource(R.string.import_share_duplicate, it.name)
+    }
+    val shareNoRecipeMsg = stringResource(R.string.import_share_no_recipe)
     LaunchedEffect(shareState) {
         when (val s = shareState) {
             is ShareImportState.Saved -> {
                 val result = snackbarHostState.showSnackbar(
-                    message = context.getString(R.string.import_share_saved, s.name),
-                    actionLabel = context.getString(R.string.import_share_view),
+                    message = shareSavedMsg.orEmpty(),
+                    actionLabel = shareViewLabel,
                 )
                 if (result == SnackbarResult.ActionPerformed) {
                     navController.navigate(Routes.recipeDetail(s.recipeId))
@@ -167,11 +176,11 @@ private fun MainScaffold() {
                 importViewModel.resetShare()
             }
             is ShareImportState.Duplicate -> {
-                snackbarHostState.showSnackbar(context.getString(R.string.import_share_duplicate, s.name))
+                snackbarHostState.showSnackbar(shareDuplicateMsg.orEmpty())
                 importViewModel.resetShare()
             }
             ShareImportState.NoRecipe -> {
-                snackbarHostState.showSnackbar(context.getString(R.string.import_share_no_recipe))
+                snackbarHostState.showSnackbar(shareNoRecipeMsg)
                 importViewModel.resetShare()
             }
             is ShareImportState.Error -> {

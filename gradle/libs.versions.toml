@@ -6,50 +6,50 @@ kotlin = "2.2.10"
 ksp = "2.2.10-2.0.2"
 
 # AndroidX core
-coreKtx = "1.16.0"
-splashscreen = "1.0.1"
+coreKtx = "1.19.0"
+splashscreen = "1.2.0"
 appcompat = "1.7.1"
-activityCompose = "1.10.1"
+activityCompose = "1.13.0"
 
 # Compose
-composeBom = "2025.06.01"
-navigationCompose = "2.8.9"
-lifecycle = "2.9.0"
+composeBom = "2026.06.00"
+navigationCompose = "2.9.8"
+lifecycle = "2.11.0"
 
 # DI — Hilt 2.59+ is required for AGP 9 Gradle plugin compatibility
-hilt = "2.59"
-hiltNavigationCompose = "1.2.0"
-hiltWork = "1.2.0"
+hilt = "2.59.2"
+hiltNavigationCompose = "1.3.0"
+hiltWork = "1.3.0"
 
 # Persistence
-room = "2.7.1"
-datastore = "1.1.7"
+room = "2.8.4"
+datastore = "1.2.1"
 
-# Networking (Phase 1)
-retrofit = "2.11.0"
-okhttp = "4.12.0"
-kotlinxSerialization = "1.8.1"
+# Networking
+retrofit = "3.0.0"
+okhttp = "5.4.0"
+kotlinxSerialization = "1.11.0"
 retrofitKotlinxConverter = "1.0.0"
 
-# Images (Phase 1)
-coil = "3.1.0"
+# Images — 3.4.0 is the last build with Kotlin <=2.3; 3.5.0 needs Kotlin 2.4 (AGP 9.3)
+coil = "3.4.0"
 
-# Camera (Phase 1)
-camerax = "1.4.2"
+# Camera
+camerax = "1.6.1"
 
-# Barcode decoding (Phase 3) — pure-Java, Apache-2.0 (GPLv3-compatible)
-zxing = "3.5.3"
+# Barcode decoding — pure-Java, Apache-2.0 (GPLv3-compatible)
+zxing = "3.5.4"
 
-# Background work (Phase 1)
-workManager = "2.10.1"
+# Background work
+workManager = "2.11.2"
 
 # Coroutines
-coroutines = "1.9.0"
+coroutines = "1.11.0"
 
 # Testing
 junit = "4.13.2"
-junitVersion = "1.2.1"
-espressoCore = "3.6.1"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
 
 [libraries]
 # Core
@@ -97,27 +97,25 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
-# Networking (Phase 1)
+# Networking
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 retrofit-kotlinx-serialization-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitKotlinxConverter" }
 
-# Images (Phase 1)
+# Images
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 
-# Camera (Phase 1)
+# Camera
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
-# QR (Phase 3)
-
-# Background work (Phase 1)
+# Background work
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
 
 # Testing

@@ -29,7 +29,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
@@ -78,7 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.food.opencook.R
@@ -443,7 +443,7 @@ private fun RecipeMeta(data: RecipeWithDetails) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         servings?.let { MetaItem(Icons.Outlined.Group, it) }
-        r.cookbook?.takeIf { it.isNotBlank() }?.let { MetaItem(Icons.Outlined.MenuBook, it) }
+        r.cookbook?.takeIf { it.isNotBlank() }?.let { MetaItem(Icons.AutoMirrored.Outlined.MenuBook, it) }
         times?.let { MetaItem(Icons.Outlined.Schedule, it) }
         r.lastCookedAt?.let { lastCookedLabel(it) }?.let {
             MetaItem(Icons.Outlined.Restaurant, "${stringResource(R.string.recipe_last_cooked_prefix)}: $it")

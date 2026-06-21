@@ -12,7 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Card
@@ -35,7 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.food.opencook.R
 import com.food.opencook.ui.AppBarViewModel
@@ -73,7 +73,7 @@ fun HomeScreen(
             // cutout); without this the empty state would draw up under the cutout.
             Box(Modifier.fillMaxSize().padding(innerPadding)) {
                 EmptyState(
-                    icon = Icons.Outlined.MenuBook,
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
                     title = stringResource(R.string.home_welcome_title),
                     message = stringResource(R.string.home_welcome_msg),
                     actionLabel = stringResource(R.string.home_add_first),
@@ -149,7 +149,7 @@ fun HomeScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.fillMaxWidth()) {
             QuickAction(stringResource(R.string.home_quick_shopping), Icons.Outlined.ShoppingCart, Modifier.weight(1f), onOpenShopping)
             QuickAction(stringResource(R.string.home_quick_plan), Icons.Outlined.CalendarMonth, Modifier.weight(1f), onOpenPlan)
-            QuickAction(stringResource(R.string.home_quick_recipes), Icons.Outlined.MenuBook, Modifier.weight(1f), onOpenRecipes)
+            QuickAction(stringResource(R.string.home_quick_recipes), Icons.AutoMirrored.Outlined.MenuBook, Modifier.weight(1f), onOpenRecipes)
         }
 
         // This week

@@ -38,20 +38,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import android.content.ClipData
 import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.food.opencook.R
 import com.food.opencook.sync.SyncStatus
 import com.food.opencook.ui.AppBarViewModel
@@ -127,7 +130,8 @@ fun SettingsScreen(
                     title = state.householdName.ifBlank { "—" },
                     subtitle = stringResource(R.string.settings_household_hint),
                 )
-                val clipboard = LocalClipboardManager.current
+                val clipboard = LocalClipboard.current
+                val scope = rememberCoroutineScope()
                 val context = LocalContext.current
                 val copied = stringResource(R.string.settings_household_code_copied)
                 SettingsRow(
@@ -135,7 +139,9 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_household_code_label),
                     subtitle = state.householdCode,
                     onClick = {
-                        clipboard.setText(AnnotatedString(state.householdCode))
+                        scope.launch {
+                            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("openCook", state.householdCode)))
+                        }
                         Toast.makeText(context, copied, Toast.LENGTH_SHORT).show()
                     },
                 )

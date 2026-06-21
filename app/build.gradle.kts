@@ -26,10 +26,10 @@ val sharedDebugKeystore: File? = run {
 
 android {
     namespace = "com.food.opencook"
+    // compileSdk 37 (supported by AGP 9.2.1) — required by the latest androidx core/lifecycle.
+    // targetSdk stays 36 (a deliberate runtime-behaviour choice, bumped separately).
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(37)
     }
 
     defaultConfig {
@@ -185,18 +185,18 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 
-    // Networking (Phase 1): Retrofit + OkHttp + kotlinx.serialization JSON
+    // Networking: Retrofit + OkHttp + kotlinx.serialization JSON
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization.converter)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlinx.serialization.json)
 
-    // Image loading (Phase 1)
+    // Image loading
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
-    // Camera capture (Phase 1)
+    // Camera capture
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
@@ -206,10 +206,10 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.compose.material3.window.size)
 
-    // Barcode decoding (Phase 3): ZXing core decodes CameraX frames (no ML Kit — proprietary)
+    // Barcode decoding: ZXing core decodes CameraX frames (no ML Kit — proprietary)
     implementation(libs.zxing.core)
 
-    // Background work (Phase 1): expedited upload + poll workers, Hilt-injected
+    // Background work: expedited upload + poll workers, Hilt-injected
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)

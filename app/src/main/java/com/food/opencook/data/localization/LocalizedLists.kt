@@ -55,7 +55,7 @@ class LocalizedLists @Inject constructor(
 
     private fun resourcesFor(lang: String): Resources {
         val config = Configuration(context.resources.configuration)
-        config.setLocale(Locale(lang))
+        config.setLocale(Locale.forLanguageTag(lang))
         return context.createConfigurationContext(config).resources
     }
 

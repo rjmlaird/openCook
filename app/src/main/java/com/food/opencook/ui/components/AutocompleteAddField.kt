@@ -15,7 +15,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -89,7 +89,7 @@ fun AutocompleteAddField(
                     }
                 },
                 modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true)
                     .focusRequester(focusRequester)
                     .fillMaxWidth(),
             )
