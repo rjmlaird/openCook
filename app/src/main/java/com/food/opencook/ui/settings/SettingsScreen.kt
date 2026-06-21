@@ -198,42 +198,45 @@ fun SettingsScreen(
                 trailing = { Switch(checked = dynamicColor, onCheckedChange = { viewModel.setDynamicColor(it) }) },
             )
 
-            HorizontalDivider()
+            // --- Server --- (only meaningful once a household/server is in use; hidden in
+            // local-only mode, where the path to a server is the "Connect to a server" row above)
+            if (joined) {
+                HorizontalDivider()
 
-            // --- Server ---
-            SectionHeader(
-                stringResource(R.string.settings_server_section),
-                modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.sm),
-            )
-            SettingsRow(
-                icon = Icons.Outlined.Dns,
-                title = stringResource(R.string.settings_server_label),
-                subtitle = state.serverUrl.ifBlank { stringResource(R.string.settings_server_hint) },
-                onClick = { serverExpanded = !serverExpanded },
-            )
-            AnimatedVisibility(serverExpanded) {
-                Column(Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    OutlinedTextField(
-                        value = serverUrl,
-                        onValueChange = { serverUrl = it },
-                        label = { Text(stringResource(R.string.settings_server_url_label)) },
-                        placeholder = { Text(stringResource(R.string.settings_server_url_placeholder)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Button(onClick = { viewModel.saveServerUrl(serverUrl) }) {
-                        Text(stringResource(R.string.settings_save))
+                SectionHeader(
+                    stringResource(R.string.settings_server_section),
+                    modifier = Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.sm),
+                )
+                SettingsRow(
+                    icon = Icons.Outlined.Dns,
+                    title = stringResource(R.string.settings_server_label),
+                    subtitle = state.serverUrl.ifBlank { stringResource(R.string.settings_server_hint) },
+                    onClick = { serverExpanded = !serverExpanded },
+                )
+                AnimatedVisibility(serverExpanded) {
+                    Column(Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        OutlinedTextField(
+                            value = serverUrl,
+                            onValueChange = { serverUrl = it },
+                            label = { Text(stringResource(R.string.settings_server_url_label)) },
+                            placeholder = { Text(stringResource(R.string.settings_server_url_placeholder)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Button(onClick = { viewModel.saveServerUrl(serverUrl) }) {
+                            Text(stringResource(R.string.settings_save))
+                        }
                     }
                 }
+                SettingsRow(
+                    icon = Icons.Outlined.Lock,
+                    title = stringResource(R.string.settings_admin),
+                    subtitle = stringResource(R.string.settings_admin_subtitle),
+                    onClick = onOpenAdmin,
+                    showChevron = true,
+                )
             }
-            SettingsRow(
-                icon = Icons.Outlined.Lock,
-                title = stringResource(R.string.settings_admin),
-                subtitle = stringResource(R.string.settings_admin_subtitle),
-                onClick = onOpenAdmin,
-                showChevron = true,
-            )
         }
     }
 }

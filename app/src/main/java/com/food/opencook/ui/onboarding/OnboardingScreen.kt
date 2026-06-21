@@ -152,10 +152,17 @@ private fun Hero() {
     }
 }
 
-/** A step title. */
+/** A step title — deliberately quieter than the Hero title so it reads as an
+ *  instruction under the brand header, not a second competing title. */
 @Composable
 private fun StepHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.titleLarge)
+    Text(
+        title,
+        modifier = Modifier.fillMaxWidth(),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+    )
 }
 
 /** First step: pick how to use openCook — offline-only on this phone, or with a home server. */

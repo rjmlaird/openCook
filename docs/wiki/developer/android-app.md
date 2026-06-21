@@ -35,7 +35,7 @@ Single Activity (`MainActivity.kt`) → `ui/OpenCookApp.kt` hosts a Compose `Nav
 
 ## Data layer (Room)
 
-`data/local/OpenCookDatabase.kt` — **schema version 17**, persisted as `opencook.db`. Entities:
+`data/local/OpenCookDatabase.kt` — **schema version 1**, persisted as `opencook.db`. Entities:
 
 `RecipeEntity`, `IngredientEntity`, `InstructionEntity`, `NutritionEntity`, `ImageEntity`,
 `JobEntity`, `MessageEntity` (the append-only sync log), `ShoppingItemEntity`, `PantryItemEntity`,
@@ -43,8 +43,9 @@ Single Activity (`MainActivity.kt`) → `ui/OpenCookApp.kt` hosts a Compose `Nav
 `ProductCacheEntity` (barcode → product cache).
 
 DAOs mirror these: `RecipeDao, JobDao, MessageDao, ShoppingDao, PantryDao, MealPlanDao, MealDayDao,
-RecipeLikeDao, ProductCacheDao`. Migrations `MIGRATION_2_3 … MIGRATION_16_17` are registered in
-`DatabaseModule`.
+RecipeLikeDao, ProductCacheDao`. v1 is the released baseline schema — the dev-time migration chain
+was squashed into it (`exportSchema=true` commits `app/schemas/.../1.json`), so there are no
+migrations yet. Real migrations get registered in `DatabaseModule` as the schema evolves past v1.
 
 ## The scan flow (client side)
 
@@ -71,7 +72,7 @@ APIs: `JobsApi`, `SyncApi`, `ImportApi`, `AdminApi`, `OpenFoodFactsApi`.
 
 ## Dependency injection (Hilt)
 
-`di/` modules, all in `SingletonComponent`: `DatabaseModule` (DB, DAOs, migrations),
+`di/` modules, all in `SingletonComponent`: `DatabaseModule` (DB, DAOs),
 `NetworkModule` (Json, OkHttp, Retrofit, APIs), `SyncModule` (`Stamper`, `SyncTrigger`),
 `SettingsModule` (DataStore), `CorrectionModule` (`ImportCorrector`). Screens use
 `@AndroidEntryPoint`; workers use `@HiltWorker` + `@AssistedInject`.

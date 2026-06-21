@@ -32,26 +32,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): OpenCookDatabase =
+        // v1 is the released baseline schema (see OpenCookDatabase): no migrations yet.
+        // Real migrations must be added here as the schema evolves past v1.
         Room.databaseBuilder(context, OpenCookDatabase::class.java, "opencook.db")
-            .addMigrations(
-                OpenCookDatabase.MIGRATION_2_3,
-                OpenCookDatabase.MIGRATION_3_4,
-                OpenCookDatabase.MIGRATION_4_5,
-                OpenCookDatabase.MIGRATION_5_6,
-                OpenCookDatabase.MIGRATION_6_7,
-                OpenCookDatabase.MIGRATION_7_8,
-                OpenCookDatabase.MIGRATION_8_9,
-                OpenCookDatabase.MIGRATION_10_11,
-                OpenCookDatabase.MIGRATION_11_12,
-                OpenCookDatabase.MIGRATION_12_13,
-                OpenCookDatabase.MIGRATION_13_14,
-                OpenCookDatabase.MIGRATION_14_15,
-                OpenCookDatabase.MIGRATION_15_16,
-                OpenCookDatabase.MIGRATION_16_17,
-            )
-            // Fallback for any gap without an explicit migration (dev convenience).
-            // Switch to exportSchema=true before the first real release.
-            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
 
     @Provides

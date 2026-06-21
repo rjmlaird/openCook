@@ -41,7 +41,7 @@ android {
         // versionCode is higher than this, and Android only installs over the top of an
         // existing install when the new versionCode is greater. versionName is cosmetic.
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -125,6 +125,12 @@ kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
     }
+}
+
+// Room exports the schema JSON here (see OpenCookDatabase exportSchema=true). The
+// committed app/schemas/.../1.json is the baseline for real migrations past v1.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
