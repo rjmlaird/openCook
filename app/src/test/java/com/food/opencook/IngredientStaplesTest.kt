@@ -61,6 +61,33 @@ class IngredientStaplesTest {
     }
 
     @Test
+    fun `staples are recognised through quantity and usage qualifiers`() {
+        // Real extracted names carry parentheticals and "zum …" usage phrases; the staple
+        // filter must see through them, otherwise salt/butter pollute the planner scoring.
+        assertTrue(IngredientStaples.isStaple("Butter zum Anbraten"))
+        assertTrue(IngredientStaples.isStaple("Salz nach Belieben"))
+        assertTrue(IngredientStaples.isStaple("Rapsöl (ca. 2 EL)"))
+        // Guard: a real main ingredient stays a non-staple even with a quantity glued on.
+        assertFalse(IngredientStaples.isStaple("Hähnchenbrustfilets (ca. 400 g)"))
+    }
+
+    @Test
+    fun `union lexicon recognises staples from every bundled language`() {
+        // LocalizedLists builds ALL as the union across every bundled content language, so an
+        // English-locale device with German recipes (or vice versa) still filters staples.
+        val original = IngredientStaples.ALL
+        try {
+            IngredientStaples.ALL = setOf("salz", "wasser", "salt", "water")
+            assertTrue(IngredientStaples.isStaple("Salz")) // German recipe…
+            assertTrue(IngredientStaples.isStaple("Salt")) // …English recipe — both inert
+            assertTrue(IngredientStaples.isStaple("Wasser"))
+            assertTrue(IngredientStaples.isStaple("Water"))
+        } finally {
+            IngredientStaples.ALL = original
+        }
+    }
+
+    @Test
     fun `default pantry is a subset of staples (modulo case)`() {
         IngredientStaples.DEFAULT_PANTRY.forEach { item ->
             assertTrue(

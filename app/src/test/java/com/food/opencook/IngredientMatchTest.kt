@@ -94,6 +94,27 @@ class IngredientMatchTest {
     }
 
     @Test
+    fun quantityParentheticalsAreStripped() {
+        // The extractor sometimes glues a quantity onto the name. Two recipes calling the
+        // same item with different parentheticals must still count as the same ingredient.
+        assertTrue(IngredientMatch.matches("Hähnchenbrustfilets (ca. 400 g)", "Hähnchenbrustfilets"))
+        assertTrue(IngredientMatch.matches("Kohlrabis (ca. 500g)", "Kohlrabi"))
+        assertTrue(IngredientMatch.containsLike(setOf("rapsöl"), "Rapsöl (ca. 2 EL)"))
+    }
+
+    @Test
+    fun trailingUsagePhrasesAreStripped() {
+        // "zum Anbraten" / "nach Belieben" name a *use*, not a second ingredient — the head
+        // before the preposition is the real item.
+        assertTrue(IngredientMatch.matches("Butter zum Anbraten", "Butter"))
+        assertTrue(IngredientMatch.matches("Salz nach Belieben", "Salz"))
+        assertTrue(IngredientMatch.matches("Tomaten für die Soße", "Tomaten"))
+        assertTrue(IngredientMatch.containsLike(setOf("butter"), "Butter zum Anbraten"))
+        // Guard: a leading adjective is NOT a usage phrase, so it stays distinct as before.
+        assertFalse(IngredientMatch.matches("rote Paprika", "Paprika"))
+    }
+
+    @Test
     fun pantrySpecificDoesNotCoverGenericIngredient() {
         // The specific pantry stock can't satisfy a generic recipe request — the recipe
         // might want a different variety, so the item stays on the shopping list.

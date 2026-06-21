@@ -100,4 +100,29 @@
         <item>handvoll</item><item>schuss</item><item>spritzer</item><item>würfel</item><item>portion</item><item>portionen</item>
         <item>ecke</item><item>ecken</item><item>riegel</item><item>topf</item>
     </string-array>
+
+    <!-- Main-protein keywords for the meal-planner variety scoring (substring match, lower-case).
+         Grouped by a fixed canonical key; only the keywords are translated per language. -->
+    <string-array name="protein_kw_poultry">
+        <item>hähnchen</item><item>haehnchen</item><item>hühn</item><item>huhn</item><item>pute</item><item>geflügel</item>
+    </string-array>
+    <string-array name="protein_kw_fish">
+        <item>fisch</item><item>lachs</item><item>thunfisch</item><item>forelle</item><item>kabeljau</item>
+        <item>seelachs</item><item>scholle</item><item>hering</item><item>garnele</item><item>scampi</item>
+    </string-array>
+    <string-array name="protein_kw_mince">
+        <item>hackfleisch</item><item>hack</item>
+    </string-array>
+    <string-array name="protein_kw_pork">
+        <item>schwein</item><item>kasseler</item><item>schnitzel</item><item>schinken</item><item>speck</item>
+    </string-array>
+    <string-array name="protein_kw_beef">
+        <item>rinder</item><item>rindfleisch</item>
+    </string-array>
+    <string-array name="protein_kw_lamb">
+        <item>lamm</item>
+    </string-array>
+    <string-array name="protein_kw_plant">
+        <item>tofu</item><item>tempeh</item><item>seitan</item>
+    </string-array>
 </resources>

@@ -83,6 +83,9 @@ object GroceryCategories {
         if (newRules.isNotEmpty()) rules = newRules
     }
 
+    /** Active rules — exposed so tests can snapshot and restore around [setRules]. */
+    val activeRules: List<Pair<GroceryCategory, List<String>>> get() = rules
+
     fun categorize(name: String): GroceryCategory {
         val n = " ${name.lowercase().trim()} "
         for ((category, keywords) in rules) {

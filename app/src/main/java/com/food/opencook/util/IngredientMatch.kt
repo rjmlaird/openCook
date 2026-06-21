@@ -36,6 +36,17 @@ object IngredientMatch {
     private val PLURAL_SUFFIXES = listOf("en", "n", "e", "s")
     private const val MIN_STEM = 3
 
+    /** Quantity / prep note glued onto a name: "Mehl (ca. 200 g)" → "Mehl". */
+    private val PARENTHETICAL = Regex("""\s*\([^)]*\)""")
+
+    /**
+     * Trailing usage phrase that names a *use*, not a second ingredient — the real item is
+     * the head before it: "Butter zum Anbraten" → "Butter", "Salz nach Belieben" → "Salz".
+     * Only stripped at the end and only after a known preposition, so multi-word ingredient
+     * names ("schwarzer Pfeffer", "rote Paprika") are left untouched.
+     */
+    private val TRAILING_QUALIFIER = Regex("""\s+(zum|zur|nach|für|fürs|to|for)\s+.*$""")
+
     /** True if [a] and [b] refer to the same ingredient up to plural form or compound-noun head. */
     fun matches(a: String, b: String): Boolean {
         val x = normalize(a)
@@ -56,10 +67,21 @@ object IngredientMatch {
      *   - "ß" → "ss" (Swiss / post-1996 orthography)
      * so "Sojasoße" and "Sojasauce" compare equal.
      */
-    private fun normalize(s: String): String =
-        s.lowercase().trim()
+    // normalize() sits on the meal-planner's hot path — generateWeekBest calls it millions of
+    // times per sweep (candidates × ingredients × days × restarts via matches/countLike). The
+    // two Regex passes each allocate a Matcher, which turned into a constant-GC storm. The set
+    // of *distinct* ingredient strings is tiny, so memoize: millions of calls collapse to a few
+    // hundred actual computations.
+    private val normalizeCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    private fun normalize(s: String): String = normalizeCache.computeIfAbsent(s) { raw ->
+        raw.lowercase()
+            .replace(PARENTHETICAL, "")
+            .replace(TRAILING_QUALIFIER, "")
             .replace("soße", "sauce")
             .replace("ß", "ss")
+            .trim()
+    }
 
     /**
      * True if a pantry stock named [pantry] satisfies a recipe call for [ingredient].

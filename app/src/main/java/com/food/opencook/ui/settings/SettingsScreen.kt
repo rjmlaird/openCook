@@ -74,6 +74,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.food.opencook.R
+import com.food.opencook.data.settings.ContentLanguages
 import com.food.opencook.sync.SyncStatus
 import com.food.opencook.ui.AppBarViewModel
 import com.food.opencook.ui.components.AppTopBar
@@ -286,11 +287,9 @@ private fun contentLanguageLabel(code: String?): String = when (code) {
 /** Picker for the household-wide recipe content language. */
 @Composable
 private fun ContentLanguageDialog(current: String?, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
-    val options: List<Pair<String?, String>> = listOf(
-        null to stringResource(R.string.settings_content_language_system),
-        "de" to stringResource(R.string.lang_german),
-        "en" to stringResource(R.string.lang_english),
-    )
+    // "Follow system" (null) plus every bundled content language — single source of truth in
+    // SettingsRepository.CONTENT_LANGUAGES, the same list LocalizedLists loads its lexicons from.
+    val codes: List<String?> = listOf(null) + ContentLanguages.CODES
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_content_language)) },
@@ -302,7 +301,7 @@ private fun ContentLanguageDialog(current: String?, onPick: (String?) -> Unit, o
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Spacing.sm),
                 )
-                options.forEach { (code, label) ->
+                codes.forEach { code ->
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -312,7 +311,7 @@ private fun ContentLanguageDialog(current: String?, onPick: (String?) -> Unit, o
                         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     ) {
                         RadioButton(selected = current == code, onClick = { onPick(code) })
-                        Text(label)
+                        Text(contentLanguageLabel(code))
                     }
                 }
             }

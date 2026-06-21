@@ -100,4 +100,28 @@
         <item>gallon</item><item>stalk</item><item>stalks</item><item>sprig</item><item>sprigs</item><item>head</item>
         <item>piece</item><item>pieces</item>
     </string-array>
+
+    <!-- Main-protein keywords for the meal-planner variety scoring (substring match, lower-case).
+         Grouped by a fixed canonical key; only the keywords are translated per language. -->
+    <string-array name="protein_kw_poultry">
+        <item>chicken</item><item>turkey</item><item>poultry</item>
+    </string-array>
+    <string-array name="protein_kw_fish">
+        <item>fish</item><item>salmon</item><item>tuna</item><item>trout</item><item>shrimp</item><item>prawn</item>
+    </string-array>
+    <string-array name="protein_kw_mince">
+        <item>mince</item>
+    </string-array>
+    <string-array name="protein_kw_pork">
+        <item>pork</item><item>bacon</item>
+    </string-array>
+    <string-array name="protein_kw_beef">
+        <item>beef</item><item>steak</item>
+    </string-array>
+    <string-array name="protein_kw_lamb">
+        <item>lamb</item>
+    </string-array>
+    <string-array name="protein_kw_plant">
+        <item>tofu</item><item>tempeh</item><item>seitan</item>
+    </string-array>
 </resources>

@@ -1,4 +1,4 @@
-&nbsp; <img src="docs/icon.png" alt="openCook logo" height="60"/> &nbsp;openCook [![CI](https://github.com/oliexdev/openCook/actions/workflows/ci.yml/badge.svg)](https://github.com/oliexdev/openCook/actions/workflows/ci.yml)
+&nbsp; <img src="fastlane/metadata/android/en-US/images/icon.png" alt="openCook logo" height="60"/> &nbsp;openCook [![CI](https://github.com/oliexdev/openCook/actions/workflows/ci.yml/badge.svg)](https://github.com/oliexdev/openCook/actions/workflows/ci.yml)
 =========
 Open-source recipe app that turns cookbook photos into recipes, plans your week and shares the shopping list
 

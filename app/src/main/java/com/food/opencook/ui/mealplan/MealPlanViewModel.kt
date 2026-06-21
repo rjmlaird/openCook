@@ -233,7 +233,7 @@ class MealPlanViewModel @Inject constructor(
             skipped = emptySet(),
             pinned = pinned,
             candidates = candidates,
-            recentlyPlanned = recentlyPlanned(today),
+            recentlyPlanned = recentlyPlanned(days.first()),
             pantry = pantryRepository.stockedNames(),
             householdSize = settingsRepository.householdSizeOnce(),
             today = today,
@@ -259,7 +259,7 @@ class MealPlanViewModel @Inject constructor(
         val currentByDate = existing.associate { LocalDate.parse(it.date) to it.recipeId }
         val others = currentByDate.filterKeys { it != target } // treat as fixed so only target changes
         // Penalise the current dish so the re-roll yields something different.
-        val recently = recentlyPlanned(today).toMutableMap()
+        val recently = recentlyPlanned(days.first()).toMutableMap()
         currentByDate[target]?.let { recently[it] = today }
         val generated = MealPlanner.generateWeek(
             dates = days,
@@ -277,9 +277,12 @@ class MealPlanViewModel @Inject constructor(
         generated[target]?.let { mealPlanRepository.replaceDay(dateKey, it.recipeId, it.reasons) }
     }
 
-    /** recipeId -> the most recent past date it was planned, over the last few weeks. */
-    private suspend fun recentlyPlanned(today: LocalDate): Map<String, LocalDate> =
-        mealPlanRepository.getForDateRange(today.minusDays(HISTORY_DAYS).toString(), today.minusDays(1).toString())
+    /** recipeId -> the most recent date it was planned in the few weeks *before* [weekStart].
+     *  Anchored on the generated week's first day (not on `today`) so the whole current week —
+     *  including today's not-yet-cooked dish — counts as recent when planning next week, while
+     *  regenerating the current week doesn't penalise it against itself. */
+    private suspend fun recentlyPlanned(weekStart: LocalDate): Map<String, LocalDate> =
+        mealPlanRepository.getForDateRange(weekStart.minusDays(HISTORY_DAYS).toString(), weekStart.minusDays(1).toString())
             .groupBy { it.recipeId }
             .mapValues { (_, entries) -> entries.maxOf { LocalDate.parse(it.date) } }
 

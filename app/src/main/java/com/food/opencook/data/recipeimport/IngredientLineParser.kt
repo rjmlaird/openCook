@@ -55,6 +55,9 @@ object IngredientLineParser {
         if (units.isNotEmpty()) UNITS = units
     }
 
+    /** Active units — exposed so tests can snapshot and restore around [setUnits]. */
+    val activeUnits: Set<String> get() = UNITS
+
     private val UNICODE_FRACTIONS = mapOf(
         '½' to 0.5, '¼' to 0.25, '¾' to 0.75, '⅓' to 1.0 / 3, '⅔' to 2.0 / 3,
         '⅛' to 0.125, '⅜' to 0.375, '⅝' to 0.625, '⅞' to 0.875,

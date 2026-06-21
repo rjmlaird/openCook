@@ -102,4 +102,17 @@ class IngredientLineParserTest {
         assertEquals("EL", i.unit)
         assertEquals("Öl", i.name)
     }
+
+    @Test fun unionRecognisesUnitsFromBothLanguages() {
+        // LocalizedLists unions the unit vocabulary across content languages, so a German spoon
+        // unit and an English spoon unit both parse regardless of which locale is "active".
+        val original = IngredientLineParser.activeUnits
+        try {
+            IngredientLineParser.setUnits(setOf("el", "tl", "g", "tbsp", "tsp", "cup"))
+            assertEquals("EL", p("2 EL Öl").unit)
+            assertEquals("tbsp", p("2 tbsp oil").unit)
+        } finally {
+            IngredientLineParser.setUnits(original)
+        }
+    }
 }

@@ -45,4 +45,31 @@ class GroceryCategoriesTest {
     fun unknownFallsBackToOther() {
         assertEquals(GroceryCategory.OTHER, GroceryCategories.categorize("Klopapier"))
     }
+
+    @Test
+    fun unionRecognisesBothLanguagesAndKeepsPriority() {
+        // LocalizedLists unions every bundled content language into each category, so an
+        // English-locale device with German recipes still groups them (and vice versa). The
+        // category *order* is unchanged, so the "specific beats generic" priority survives.
+        val original = GroceryCategories.activeRules
+        try {
+            GroceryCategories.setRules(
+                listOf(
+                    GroceryCategory.PANTRY to listOf("kokosmilch", "coconut milk"),
+                    GroceryCategory.MEAT_FISH to listOf("hähnchen", "chicken"),
+                    GroceryCategory.PRODUCE to listOf("zwiebel", "onion"),
+                    GroceryCategory.DAIRY to listOf("milch", "milk"),
+                ),
+            )
+            assertEquals(GroceryCategory.MEAT_FISH, GroceryCategories.categorize("Hähnchenbrust"))
+            assertEquals(GroceryCategory.MEAT_FISH, GroceryCategories.categorize("chicken breast"))
+            assertEquals(GroceryCategory.PRODUCE, GroceryCategories.categorize("Zwiebel"))
+            assertEquals(GroceryCategory.PRODUCE, GroceryCategories.categorize("onion"))
+            // PANTRY is listed before DAIRY → "Kokosmilch"/"coconut milk" stay out of DAIRY.
+            assertEquals(GroceryCategory.PANTRY, GroceryCategories.categorize("Kokosmilch"))
+            assertEquals(GroceryCategory.PANTRY, GroceryCategories.categorize("coconut milk"))
+        } finally {
+            GroceryCategories.setRules(original)
+        }
+    }
 }

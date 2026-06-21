@@ -22,6 +22,7 @@ import com.food.opencook.data.local.relation.RecipeWithDetails
 import com.food.opencook.util.DurationFormat
 import com.food.opencook.util.IngredientMatch
 import com.food.opencook.util.IngredientStaples
+import com.food.opencook.util.ProteinGroups
 import com.food.opencook.util.RecipeCategories
 import kotlinx.serialization.Serializable
 import java.time.DayOfWeek
@@ -66,6 +67,8 @@ object MealPlanner {
         val likedBonus: Double = 2.0,            // recipe liked by ≥1 member
         val cookedRecentlyPenalty: Double = 4.0, // cooked within the window; decays
         val cookedWindowDays: Long = 10,
+        val sameProteinPenalty: Double = 4.0,    // per prior use of the same main protein in the week
+        val proteinRecencyWindowDays: Long = 3,  // also avoid repeating a protein right across the week boundary
     )
 
     /** Leftovers are only carried to a free day at most this many days later. */
@@ -86,6 +89,7 @@ object MealPlanner {
         RECENTLY_COOKED,         // actually cooked within the cooked window
         SAME_CATEGORY_NEIGHBOUR, // same real category as the day before/after
         MONOTONY,                // a main ingredient (e.g. chicken) is already used 2+ times this week
+        SAME_PROTEIN,            // same main protein (poultry/beef/fish/…) as another day or just-cooked week
     }
 
     /** One factor's contribution to a recipe's score. [detail] carries optional
@@ -120,6 +124,7 @@ object MealPlanner {
         lastCookedAt: Map<String, LocalDate> = emptyMap(),
         weights: Weights = Weights(),
         coreByRecipe: Map<String, Set<String>>? = null,
+        proteinByRecipe: Map<String, String?>? = null,
     ): Map<LocalDate, PickedRecipe> {
         if (candidates.isEmpty()) {
             return pinned.mapValues { (_, id) ->
@@ -134,6 +139,15 @@ object MealPlanner {
         val core: Map<String, Set<String>> = coreByRecipe ?: candidates.associate { rwd ->
             rwd.recipe.id to rwd.ingredientNames().filterNot { IngredientStaples.isStaple(it) }.toSet()
         }
+        // Main protein per recipe (poultry/beef/fish/…), computed once — drives the variety
+        // penalty that stops the week filling up with the same protein.
+        val proteinOf: Map<String, String?> = proteinByRecipe ?: candidates.associate { it.recipe.id to mainProtein(it) }
+        // Most recent past date each protein group was planned, so a protein isn't repeated
+        // right across the week boundary (chicken Sunday → not chicken again Monday).
+        val recentProteins: Map<String, LocalDate> = recentlyPlanned.entries
+            .mapNotNull { (id, date) -> proteinOf[id]?.let { it to date } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, dates) -> dates.max() }
         val result = LinkedHashMap<LocalDate, PickedRecipe>()
         pinned.forEach { (date, id) ->
             if (id in byId) result[date] = PickedRecipe(id, score = 0.0, reasons = emptyList())
@@ -165,8 +179,13 @@ object MealPlanner {
                 .flatten()
                 .groupingBy { it }
                 .eachCount()
+            // How many already-placed days share each protein group this week.
+            val weekProteinCounts: Map<String, Int> = placedIds.values
+                .mapNotNull { proteinOf[it] }
+                .groupingBy { it }
+                .eachCount()
             val best = pool
-                .map { it to score(it, date, placedIds, byId, recentlyPlanned, pantry, core, weekCoreCounts, maxMinutes, liked, lastCookedAt, weights, rng) }
+                .map { it to score(it, date, placedIds, byId, recentlyPlanned, pantry, core, weekCoreCounts, proteinOf, weekProteinCounts, recentProteins, maxMinutes, liked, lastCookedAt, weights, rng) }
                 .maxByOrNull { it.second.first }
                 ?: continue
             val (recipe, scored) = best
@@ -220,6 +239,7 @@ object MealPlanner {
         val coreByRecipe: Map<String, Set<String>> = candidates.associate { rwd ->
             rwd.recipe.id to rwd.ingredientNames().filterNot { IngredientStaples.isStaple(it) }.toSet()
         }
+        val proteinByRecipe: Map<String, String?> = candidates.associate { it.recipe.id to mainProtein(it) }
         var bestPlan: Map<LocalDate, PickedRecipe>? = null
         var bestAggregate = Double.NEGATIVE_INFINITY
         repeat(restarts) { i ->
@@ -227,7 +247,7 @@ object MealPlanner {
                 dates, skipped, pinned, candidates, recentlyPlanned, pantry,
                 householdSize, today, seed = seed + i, liked = liked,
                 lastCookedAt = lastCookedAt, weights = weights,
-                coreByRecipe = coreByRecipe,
+                coreByRecipe = coreByRecipe, proteinByRecipe = proteinByRecipe,
             )
             val scoreSum = plan.values.sumOf { it.score }
             // Aggregate Cardinality: count distinct non-staple ingredients across all
@@ -253,6 +273,9 @@ object MealPlanner {
         pantry: Set<String>,
         coreByRecipe: Map<String, Set<String>>,
         weekCoreCounts: Map<String, Int>,
+        proteinByRecipe: Map<String, String?>,
+        weekProteinCounts: Map<String, Int>,
+        recentProteins: Map<String, LocalDate>,
         maxMinutes: Double,
         liked: Set<String>,
         lastCookedAt: Map<String, LocalDate>,
@@ -299,6 +322,26 @@ object MealPlanner {
                 if (neighbourCategory == category) {
                     s -= w.sameCategoryPenalty
                     reasons += ReasonContribution(ReasonCode.SAME_CATEGORY_NEIGHBOUR, -w.sameCategoryPenalty, detail = category)
+                }
+            }
+        }
+        // Variety: don't repeat the same main protein. Chicken on Monday AND Friday reads as
+        // monotonous even when the sides differ, so penalise each prior appearance this week
+        // (strong enough to overpower the reuse bonus the protein would otherwise earn). When
+        // the protein is new to the week, still avoid it if a recently-planned week just used
+        // it — that stops poultry bleeding across the week boundary.
+        proteinByRecipe[recipe.recipe.id]?.let { protein ->
+            val inWeek = weekProteinCounts[protein] ?: 0
+            if (inWeek > 0) {
+                val d = -w.sameProteinPenalty * inWeek
+                s += d
+                reasons += ReasonContribution(ReasonCode.SAME_PROTEIN, d, detail = protein)
+            } else recentProteins[protein]?.let { last ->
+                val days = ChronoUnit.DAYS.between(last, date).coerceAtLeast(0)
+                if (days < w.proteinRecencyWindowDays) {
+                    val d = -w.sameProteinPenalty * (1.0 - days.toDouble() / w.proteinRecencyWindowDays)
+                    s += d
+                    reasons += ReasonContribution(ReasonCode.SAME_PROTEIN, d, detail = protein)
                 }
             }
         }
@@ -401,6 +444,12 @@ object MealPlanner {
      *  hits so plural and singular forms ("Zwiebel" + "Zwiebeln") contribute together. */
     private fun countLike(counts: Map<String, Int>, name: String): Int =
         counts.entries.filter { IngredientMatch.matches(it.key, name) }.sumOf { it.value }
+
+    /** The dish's main protein group (poultry/beef/fish/…) or null. The title usually names the
+     *  hero ("Hähnchenbrust …"); fall back to the first protein-bearing ingredient. */
+    private fun mainProtein(recipe: RecipeWithDetails): String? =
+        ProteinGroups.groupOf(recipe.recipe.name.orEmpty())
+            ?: recipe.ingredients.firstNotNullOfOrNull { ProteinGroups.groupOf(it.name) }
 
     /** Total time in minutes, falling back to prep + cook when totalTime is absent. */
     private fun effectiveMinutes(recipe: RecipeWithDetails): Double? {

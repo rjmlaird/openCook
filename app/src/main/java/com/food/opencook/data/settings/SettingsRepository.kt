@@ -158,6 +158,17 @@ class SettingsRepository @Inject constructor(
 }
 
 /**
+ * Bundled recipe content languages (ISO 639-1), English first as the fallback. Single source of
+ * truth: the Settings picker ([com.food.opencook.ui.settings.SettingsScreen]'s content-language
+ * dialog) and the domain-list loader ([com.food.opencook.data.localization.LocalizedLists]) both
+ * derive from this. Add a code here when you ship a new `values-<code>/arrays.xml` +
+ * `server/app/i18n/<code>.json`.
+ */
+object ContentLanguages {
+    val CODES = listOf("en", "de")
+}
+
+/**
  * Resolves the effective recipe content language ("de"/"en"). A tiny injectable seam so
  * callers (e.g. RecipeRepository) don't depend on the DataStore-backed [SettingsRepository]
  * directly and can be unit-tested with a trivial `ContentLanguageProvider { "de" }`.

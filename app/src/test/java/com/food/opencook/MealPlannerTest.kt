@@ -340,6 +340,40 @@ class MealPlannerTest {
     }
 
     @Test
+    fun avoidsRepeatingTheSameMainProteinInTheWeek() {
+        // c1 is pinned for day 0 (poultry). For day 1 a second poultry dish must lose to the
+        // fish, even though no category penalty applies (all uncategorised), because the
+        // protein "geflügel" is already used this week.
+        val c1 = recipe("c1", "Sonstiges", ingredients = listOf("Hähnchenbrust", "Reis"))
+        val c2 = recipe("c2", "Sonstiges", ingredients = listOf("Hähnchen", "Brokkoli"))
+        val fish = recipe("fish", "Sonstiges", ingredients = listOf("Lachs", "Spargel"))
+        val result = MealPlanner.generateWeek(
+            dates = week(2), skipped = emptySet(), pinned = mapOf(today to "c1"),
+            candidates = listOf(c2, fish, c1), // c2 before fish → would win a tie without the penalty
+            recentlyPlanned = emptyMap(), pantry = emptySet(),
+            householdSize = 2, today = today, seed = 1, weights = NO_JITTER,
+        )
+        assertEquals("c1", result[today]?.recipeId)
+        assertEquals("fish", result[today.plusDays(1)]?.recipeId)
+    }
+
+    @Test
+    fun avoidsAProteinUsedRightBeforeThisWeek() {
+        // "a" (poultry) was planned yesterday. A *different* poultry dish "b" therefore carries
+        // no recipe-recency penalty of its own, but its protein is still recent → the fish wins.
+        val a = recipe("a", "Sonstiges", ingredients = listOf("Hähnchen", "Reis"))
+        val b = recipe("b", "Sonstiges", ingredients = listOf("Hähnchenbrust", "Curry"))
+        val fish = recipe("fish", "Sonstiges", ingredients = listOf("Lachs", "Spargel"))
+        val result = MealPlanner.generateWeek(
+            dates = week(1), skipped = emptySet(), pinned = emptyMap(),
+            candidates = listOf(b, fish, a), // b before fish → would win a tie without the penalty
+            recentlyPlanned = mapOf("a" to today.minusDays(1)),
+            pantry = emptySet(), householdSize = 2, today = today, seed = 1, weights = NO_JITTER,
+        )
+        assertEquals("fish", result[today]?.recipeId)
+    }
+
+    @Test
     fun generateWeekBestPicksTheLeastShoppingHeavyPlan() {
         // Two recipes overlap heavily on a "real" ingredient; one stands alone. The
         // Multi-Restart wrapper must converge to a week that prefers the overlap.

@@ -245,6 +245,15 @@
     <string name="mealplan_reason_recently_cooked">Recently cooked (%1$s)</string>
     <string name="mealplan_reason_same_category">Similar to the adjacent day (%1$s)</string>
     <string name="mealplan_reason_monotony">Already frequent this week: %1$s</string>
+    <string name="mealplan_reason_same_protein">Same main ingredient as another day: %1$s</string>
+    <!-- Display labels for the meal-planner main-protein groups (keys are fixed in code). -->
+    <string name="protein_label_poultry">Poultry</string>
+    <string name="protein_label_fish">Fish</string>
+    <string name="protein_label_mince">Minced meat</string>
+    <string name="protein_label_pork">Pork</string>
+    <string name="protein_label_beef">Beef</string>
+    <string name="protein_label_lamb">Lamb</string>
+    <string name="protein_label_plant">Plant-based</string>
     <string name="mealplan_reasons_title">Why this dish?</string>
     <string name="mealplan_reasons_why">Why?</string>
     <string name="mealplan_reasons_close">Close</string>

@@ -75,7 +75,21 @@ object MealPlanReasons {
                 RecipeCategories.displayLabel(context, c.detail),
             )
             ReasonCode.MONOTONY -> context.getString(R.string.mealplan_reason_monotony, list)
+            ReasonCode.SAME_PROTEIN -> context.getString(R.string.mealplan_reason_same_protein, proteinLabel(context, c.detail))
         }
+    }
+
+    /** Localized label for a fixed protein-group key (see [ProteinGroups]); the key itself stays
+     *  language-independent. Falls back to the raw key title-cased for any unmapped group. */
+    private fun proteinLabel(context: Context, key: String?): String = when (key) {
+        "geflügel" -> context.getString(R.string.protein_label_poultry)
+        "fisch" -> context.getString(R.string.protein_label_fish)
+        "hackfleisch" -> context.getString(R.string.protein_label_mince)
+        "schwein" -> context.getString(R.string.protein_label_pork)
+        "rind" -> context.getString(R.string.protein_label_beef)
+        "lamm" -> context.getString(R.string.protein_label_lamb)
+        "tofu" -> context.getString(R.string.protein_label_plant)
+        else -> key.orEmpty().replaceFirstChar { it.uppercase() }
     }
 
     @Composable
@@ -94,6 +108,7 @@ object MealPlanReasons {
         ReasonCode.RECENTLY_COOKED -> Icons.Outlined.Restaurant
         ReasonCode.SAME_CATEGORY_NEIGHBOUR -> Icons.Outlined.Tune
         ReasonCode.MONOTONY -> Icons.Outlined.Repeat
+        ReasonCode.SAME_PROTEIN -> Icons.Outlined.Restaurant
     }
 
     /** Pre-sorted lists for the details sheet: pluses on top, minuses below. */
