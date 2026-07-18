@@ -58,6 +58,25 @@ class DurationFormatTest {
         assertEquals("über Nacht", DurationFormat.toHuman("über Nacht"))
     }
 
+    // GitHub issue #2: second-based and zero durations (e.g. from Japanese recipes) must
+    // not leak raw ISO to the UI.
+    @Test
+    fun secondBasedAndZeroDurations() {
+        assertEquals("15 Min", DurationFormat.toHuman("PT900S"))
+        assertEquals("1 Std 30 Min", DurationFormat.toHuman("PT1H30M0S"))
+        assertEquals("", DurationFormat.toHuman("PT0M"))
+        assertEquals("", DurationFormat.toHuman("PT0S"))
+
+        assertEquals(15, DurationFormat.minutes("PT900S"))
+        assertNull(DurationFormat.minutes("PT0M"))
+    }
+
+    @Test
+    fun secondBasedDurationEnglishLocale() {
+        Locale.setDefault(Locale.ENGLISH)
+        assertEquals("15 min", DurationFormat.toHuman("PT900S"))
+    }
+
     @Test
     fun humanToIso() {
         assertEquals("PT25M", DurationFormat.toIso("25 Min"))

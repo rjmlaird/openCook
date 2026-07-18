@@ -453,8 +453,10 @@ private fun RecipeMeta(data: RecipeWithDetails) {
     val r = data.recipe
     val servings = r.recipeYield ?: r.servings?.let { stringResource(R.string.wizard_summary_servings, it.toString()) }
     val times = listOfNotNull(
-        r.prepTime?.let { stringResource(R.string.recipe_meta_prep, DurationFormat.toHuman(it)) },
-        r.cookTime?.let { stringResource(R.string.recipe_meta_cook, DurationFormat.toHuman(it)) },
+        r.prepTime?.let { DurationFormat.toHuman(it) }?.takeIf { it.isNotBlank() }
+            ?.let { stringResource(R.string.recipe_meta_prep, it) },
+        r.cookTime?.let { DurationFormat.toHuman(it) }?.takeIf { it.isNotBlank() }
+            ?.let { stringResource(R.string.recipe_meta_cook, it) },
     ).joinToString(" · ").takeIf { it.isNotEmpty() }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),

@@ -30,17 +30,26 @@ import java.util.Locale
  */
 object DurationFormat {
 
-    private val ISO = Regex("""^PT(?:(\d+)H)?(?:(\d+)M)?$""", RegexOption.IGNORE_CASE)
+    // Accept an optional seconds component too: some recipes (e.g. AI-extracted Japanese
+    // ones) carry durations like "PT900S" or "PT0M" instead of "PT15M". Seconds are folded
+    // into minutes below so the UI never shows a raw ISO string. See GitHub issue #2.
+    private val ISO = Regex("""^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$""", RegexOption.IGNORE_CASE)
     private val HOURS = Regex("""(\d+)\s*(?:Std|Stunde|Stunden|h)""", RegexOption.IGNORE_CASE)
     private val MINUTES = Regex("""(\d+)\s*(?:Min|Minuten|m)""", RegexOption.IGNORE_CASE)
 
-    /** ISO-8601 -> total minutes ("PT1H10M" -> 70), or null if not a PT duration. */
+    /** A matched [ISO] duration as total minutes, seconds rounded to the nearest minute. */
+    private fun totalMinutes(match: MatchResult): Int {
+        val hours = match.groupValues[1].toIntOrNull() ?: 0
+        val minutes = match.groupValues[2].toIntOrNull() ?: 0
+        val seconds = match.groupValues[3].toIntOrNull() ?: 0
+        return (hours * 3600 + minutes * 60 + seconds + 30) / 60
+    }
+
+    /** ISO-8601 -> total minutes ("PT1H10M" -> 70, "PT900S" -> 15), or null if not a PT duration. */
     fun minutes(iso: String?): Int? {
         if (iso.isNullOrBlank()) return null
         val match = ISO.matchEntire(iso.trim()) ?: return null
-        val hours = match.groupValues[1].toIntOrNull() ?: 0
-        val mins = match.groupValues[2].toIntOrNull() ?: 0
-        val total = hours * 60 + mins
+        val total = totalMinutes(match)
         return if (total > 0) total else null
     }
 
@@ -48,14 +57,15 @@ object DurationFormat {
     fun toHuman(iso: String?): String {
         if (iso.isNullOrBlank()) return ""
         val match = ISO.matchEntire(iso.trim()) ?: return iso
-        val hours = match.groupValues[1].toIntOrNull() ?: 0
-        val minutes = match.groupValues[2].toIntOrNull() ?: 0
+        val total = totalMinutes(match)
+        val hours = total / 60
+        val minutes = total % 60
         val (h, m) = if (Locale.getDefault().language == "de") "Std" to "Min" else "h" to "min"
         return when {
             hours > 0 && minutes > 0 -> "$hours $h $minutes $m"
             hours > 0 -> "$hours $h"
             minutes > 0 -> "$minutes $m"
-            else -> iso
+            else -> "" // a matched but zero-length duration ("PT0M") shows nothing, not raw ISO
         }
     }
 
