@@ -315,6 +315,10 @@
     <string name="settings_connect_server_hint">Unlock photo scanning and family sync — your data is kept.</string>
     <string name="settings_appearance_section">Appearance</string>
     <string name="settings_dynamic_color">Material You (system colors)</string>
+    <string name="settings_text_size">Text size</string>
+    <string name="settings_text_size_normal">Normal</string>
+    <string name="settings_text_size_large">Large</string>
+    <string name="settings_text_size_extra_large">Extra large</string>
 
     <!-- Settings: grouped sections + admin -->
     <string name="settings_household_section_label">Household</string>

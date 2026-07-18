@@ -1,0 +1,365 @@
+diff --git a/app/src/main/java/com/food/opencook/MainActivity.kt b/app/src/main/java/com/food/opencook/MainActivity.kt
+index e72b4b9..60ba3bb 100644
+--- a/app/src/main/java/com/food/opencook/MainActivity.kt
++++ b/app/src/main/java/com/food/opencook/MainActivity.kt
+@@ -47,7 +47,8 @@ class MainActivity : ComponentActivity() {
+         setContent {
+             val themeViewModel: ThemeViewModel = hiltViewModel()
+             val dynamicColor by themeViewModel.dynamicColor.collectAsStateWithLifecycle()
+-            OpenCookTheme(dynamicColor = dynamicColor) {
++            val textScale by themeViewModel.textScale.collectAsStateWithLifecycle()
++            OpenCookTheme(dynamicColor = dynamicColor, textScale = textScale) {
+                 OpenCookApp()
+             }
+         }
+diff --git a/app/src/main/java/com/food/opencook/data/settings/SettingsRepository.kt b/app/src/main/java/com/food/opencook/data/settings/SettingsRepository.kt
+index 537c4d6..ff01ee4 100644
+--- a/app/src/main/java/com/food/opencook/data/settings/SettingsRepository.kt
++++ b/app/src/main/java/com/food/opencook/data/settings/SettingsRepository.kt
+@@ -54,6 +54,20 @@ class SettingsRepository @Inject constructor(
+         dataStore.edit { it[DYNAMIC_COLOR] = enabled }
+     }
+ 
++    /**
++     * Global text size multiplier, on top of the system font scale — mainly for reading
++     * ingredients/steps while cooking. Per-device only (not synced): unlike [contentLanguage],
++     * how big someone wants their own screen's text has nothing to do with the household's
++     * shared data, so it stays local, like [dynamicColor].
++     */
++    val textScale: Flow<TextScale> = dataStore.data.map { prefs ->
++        TextScale.fromStored(prefs[TEXT_SCALE])
++    }
++
++    suspend fun setTextScale(scale: TextScale) {
++        dataStore.edit { it[TEXT_SCALE] = scale.name }
++    }
++
+     /**
+      * The user explicitly chose to use openCook on this device only — no server, no
+      * household. Lets the app gate past onboarding without a household (offline-first).
+@@ -150,6 +164,7 @@ class SettingsRepository @Inject constructor(
+         val HOUSEHOLD_NAME = stringPreferencesKey("household_name")
+         val HOUSEHOLD_SIZE = intPreferencesKey("household_size")
+         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
++        val TEXT_SCALE = stringPreferencesKey("text_scale")
+         val LOCAL_ONLY = booleanPreferencesKey("local_only")
+         val CONTENT_LANGUAGE = stringPreferencesKey("content_language")
+         val NODE_ID = stringPreferencesKey("node_id")
+@@ -176,3 +191,20 @@ object ContentLanguages {
+ fun interface ContentLanguageProvider {
+     suspend fun effective(): String
+ }
++
++/**
++ * A global text-size step applied on top of the system font scale (Settings > Appearance).
++ * Stored by [name] so adding a step later doesn't renumber existing values. Applied via
++ * [com.food.opencook.ui.theme.OpenCookTheme], which multiplies the ambient [LocalDensity]
++ * font scale — every `sp` in the app grows with it, not just cook-mode text.
++ */
++enum class TextScale(val multiplier: Float) {
++    NORMAL(1.0f),
++    LARGE(1.15f),
++    EXTRA_LARGE(1.3f),
++    ;
++
++    companion object {
++        fun fromStored(name: String?): TextScale = entries.find { it.name == name } ?: NORMAL
++    }
++}
+diff --git a/app/src/main/java/com/food/opencook/ui/ThemeViewModel.kt b/app/src/main/java/com/food/opencook/ui/ThemeViewModel.kt
+index 2f3d5d8..f25943d 100644
+--- a/app/src/main/java/com/food/opencook/ui/ThemeViewModel.kt
++++ b/app/src/main/java/com/food/opencook/ui/ThemeViewModel.kt
+@@ -21,17 +21,21 @@ package com.food.opencook.ui
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
+ import com.food.opencook.data.settings.SettingsRepository
++import com.food.opencook.data.settings.TextScale
+ import dagger.hilt.android.lifecycle.HiltViewModel
+ import kotlinx.coroutines.flow.SharingStarted
+ import kotlinx.coroutines.flow.StateFlow
+ import kotlinx.coroutines.flow.stateIn
+ import javax.inject.Inject
+ 
+-/** Exposes the theme settings the Activity needs at setContent (Material You toggle). */
++/** Exposes the theme settings the Activity needs at setContent (Material You toggle, text size). */
+ @HiltViewModel
+ class ThemeViewModel @Inject constructor(
+     settings: SettingsRepository,
+ ) : ViewModel() {
+     val dynamicColor: StateFlow<Boolean> =
+         settings.dynamicColor.stateIn(viewModelScope, SharingStarted.Eagerly, false)
++
++    val textScale: StateFlow<TextScale> =
++        settings.textScale.stateIn(viewModelScope, SharingStarted.Eagerly, TextScale.NORMAL)
+ }
+diff --git a/app/src/main/java/com/food/opencook/ui/settings/SettingsScreen.kt b/app/src/main/java/com/food/opencook/ui/settings/SettingsScreen.kt
+index 9bc1e9a..1823c12 100644
+--- a/app/src/main/java/com/food/opencook/ui/settings/SettingsScreen.kt
++++ b/app/src/main/java/com/food/opencook/ui/settings/SettingsScreen.kt
+@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Language
+ import androidx.compose.material.icons.outlined.Lock
+ import androidx.compose.material.icons.outlined.Palette
+ import androidx.compose.material.icons.outlined.Sync
++import androidx.compose.material.icons.outlined.TextFields
+ import androidx.compose.material3.AlertDialog
+ import androidx.compose.material3.Button
+ import androidx.compose.material3.HorizontalDivider
+@@ -75,6 +76,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
+ import kotlinx.coroutines.launch
+ import com.food.opencook.R
+ import com.food.opencook.data.settings.ContentLanguages
++import com.food.opencook.data.settings.TextScale
+ import com.food.opencook.sync.SyncStatus
+ import com.food.opencook.ui.AppBarViewModel
+ import com.food.opencook.ui.components.AppTopBar
+@@ -88,6 +90,7 @@ fun SettingsScreen(
+ ) {
+     val state by viewModel.uiState.collectAsStateWithLifecycle()
+     val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
++    val textScale by viewModel.textScale.collectAsStateWithLifecycle()
+     val contentLanguage by viewModel.contentLanguage.collectAsStateWithLifecycle()
+     val appBar: AppBarViewModel = hiltViewModel()
+     val syncStatus by appBar.status.collectAsStateWithLifecycle()
+@@ -97,6 +100,7 @@ fun SettingsScreen(
+     var serverExpanded by remember { mutableStateOf(false) }
+     var showLeaveConfirm by remember { mutableStateOf(false) }
+     var showLanguageDialog by remember { mutableStateOf(false) }
++    var showTextScaleDialog by remember { mutableStateOf(false) }
+ 
+     if (showLanguageDialog) {
+         ContentLanguageDialog(
+@@ -106,6 +110,14 @@ fun SettingsScreen(
+         )
+     }
+ 
++    if (showTextScaleDialog) {
++        TextScaleDialog(
++            current = textScale,
++            onPick = { viewModel.setTextScale(it); showTextScaleDialog = false },
++            onDismiss = { showTextScaleDialog = false },
++        )
++    }
++
+     if (showLeaveConfirm) {
+         AlertDialog(
+             onDismissRequest = { showLeaveConfirm = false },
+@@ -222,6 +234,13 @@ fun SettingsScreen(
+                 title = stringResource(R.string.settings_dynamic_color),
+                 trailing = { Switch(checked = dynamicColor, onCheckedChange = { viewModel.setDynamicColor(it) }) },
+             )
++            SettingsRow(
++                icon = Icons.Outlined.TextFields,
++                title = stringResource(R.string.settings_text_size),
++                subtitle = textScaleLabel(textScale),
++                onClick = { showTextScaleDialog = true },
++                showChevron = true,
++            )
+ 
+             // --- Server --- (only meaningful once a household/server is in use; hidden in
+             // local-only mode, where the path to a server is the "Connect to a server" row above)
+@@ -323,6 +342,42 @@ private fun ContentLanguageDialog(current: String?, onPick: (String?) -> Unit, o
+     )
+ }
+ 
++private fun textScaleLabel(scale: TextScale): String = when (scale) {
++    TextScale.NORMAL -> stringResource(R.string.settings_text_size_normal)
++    TextScale.LARGE -> stringResource(R.string.settings_text_size_large)
++    TextScale.EXTRA_LARGE -> stringResource(R.string.settings_text_size_extra_large)
++}
++
++/** Picker for the global text-size step — mainly for reading recipe steps while cooking. */
++@Composable
++private fun TextScaleDialog(current: TextScale, onPick: (TextScale) -> Unit, onDismiss: () -> Unit) {
++    AlertDialog(
++        onDismissRequest = onDismiss,
++        title = { Text(stringResource(R.string.settings_text_size)) },
++        text = {
++            Column {
++                TextScale.entries.forEach { scale ->
++                    Row(
++                        Modifier
++                            .fillMaxWidth()
++                            .clickable { onPick(scale) }
++                            .padding(vertical = Spacing.xs),
++                        verticalAlignment = Alignment.CenterVertically,
++                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
++                    ) {
++                        RadioButton(selected = current == scale, onClick = { onPick(scale) })
++                        Text(textScaleLabel(scale))
++                    }
++                }
++            }
++        },
++        confirmButton = {},
++        dismissButton = {
++            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.processing_cancel)) }
++        },
++    )
++}
++
+ /** One settings entry: leading icon, title (+ optional subtitle), and either a
+  * trailing control or a chevron when it opens something. */
+ @Composable
+diff --git a/app/src/main/java/com/food/opencook/ui/settings/SettingsViewModel.kt b/app/src/main/java/com/food/opencook/ui/settings/SettingsViewModel.kt
+index 9105dbb..e9eee23 100644
+--- a/app/src/main/java/com/food/opencook/ui/settings/SettingsViewModel.kt
++++ b/app/src/main/java/com/food/opencook/ui/settings/SettingsViewModel.kt
+@@ -27,6 +27,7 @@ import com.food.opencook.data.remote.SyncApi
+ import com.food.opencook.data.remote.dto.HouseholdSettings
+ import com.food.opencook.data.remote.dto.PatchHouseholdRequest
+ import com.food.opencook.data.settings.SettingsRepository
++import com.food.opencook.data.settings.TextScale
+ import com.food.opencook.sync.SyncEngine
+ import dagger.hilt.android.lifecycle.HiltViewModel
+ import dagger.hilt.android.qualifiers.ApplicationContext
+@@ -81,6 +82,12 @@ class SettingsViewModel @Inject constructor(
+ 
+     fun setDynamicColor(enabled: Boolean) = viewModelScope.launch { settings.setDynamicColor(enabled) }
+ 
++    /** Text-size step for the whole app (Settings > Appearance); local to this device. */
++    val textScale: StateFlow<TextScale> =
++        settings.textScale.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TextScale.NORMAL)
++
++    fun setTextScale(scale: TextScale) = viewModelScope.launch { settings.setTextScale(scale) }
++
+     /** Household-wide recipe content language (null = follow each device's system language). */
+     val contentLanguage: StateFlow<String?> =
+         settings.contentLanguage.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+diff --git a/app/src/main/java/com/food/opencook/ui/theme/Theme.kt b/app/src/main/java/com/food/opencook/ui/theme/Theme.kt
+index 720aba0..51ec6cd 100644
+--- a/app/src/main/java/com/food/opencook/ui/theme/Theme.kt
++++ b/app/src/main/java/com/food/opencook/ui/theme/Theme.kt
+@@ -24,13 +24,19 @@ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.dynamicDarkColorScheme
+ import androidx.compose.material3.dynamicLightColorScheme
+ import androidx.compose.runtime.Composable
++import androidx.compose.runtime.CompositionLocalProvider
+ import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.platform.LocalDensity
++import androidx.compose.ui.unit.Density
++import com.food.opencook.data.settings.TextScale
+ 
+ @Composable
+ fun OpenCookTheme(
+     darkTheme: Boolean = isSystemInDarkTheme(),
+     // Brand identity by default; Material You (dynamic color, Android 12+) is opt-in.
+     dynamicColor: Boolean = false,
++    // User-chosen text size step (Settings > Appearance). Normal = system font scale, untouched.
++    textScale: TextScale = TextScale.NORMAL,
+     content: @Composable () -> Unit,
+ ) {
+     val colorScheme = when {
+@@ -41,10 +47,20 @@ fun OpenCookTheme(
+         darkTheme -> DarkColors
+         else -> LightColors
+     }
+-    MaterialTheme(
+-        colorScheme = colorScheme,
+-        typography = Typography,
+-        shapes = Shapes,
+-        content = content,
++    // Scale on top of the system's own font scale (accessibility settings still compose with
++    // this) rather than replacing it, and leave LocalDensity's `density` (dp) alone so layout
++    // spacing/icons don't grow — only text does.
++    val density = LocalDensity.current
++    val scaledDensity = Density(
++        density = density.density,
++        fontScale = density.fontScale * textScale.multiplier,
+     )
++    CompositionLocalProvider(LocalDensity provides scaledDensity) {
++        MaterialTheme(
++            colorScheme = colorScheme,
++            typography = Typography,
++            shapes = Shapes,
++            content = content,
++        )
++    }
+ }
+diff --git a/app/src/main/res/values-de/strings.xml b/app/src/main/res/values-de/strings.xml
+index 1cde370..73f86f3 100644
+--- a/app/src/main/res/values-de/strings.xml
++++ b/app/src/main/res/values-de/strings.xml
+@@ -317,6 +317,10 @@
+     <string name="settings_connect_server_hint">Foto-Scan und Familien-Sync freischalten — deine Daten bleiben erhalten.</string>
+     <string name="settings_appearance_section">Darstellung</string>
+     <string name="settings_dynamic_color">Material You (Systemfarben)</string>
++    <string name="settings_text_size">Textgröße</string>
++    <string name="settings_text_size_normal">Normal</string>
++    <string name="settings_text_size_large">Groß</string>
++    <string name="settings_text_size_extra_large">Sehr groß</string>
+ 
+     <!-- Settings: grouped sections + admin -->
+     <string name="settings_household_section_label">Haushalt</string>
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 04f78c1..4b19cc1 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -315,6 +315,10 @@
+     <string name="settings_connect_server_hint">Unlock photo scanning and family sync — your data is kept.</string>
+     <string name="settings_appearance_section">Appearance</string>
+     <string name="settings_dynamic_color">Material You (system colors)</string>
++    <string name="settings_text_size">Text size</string>
++    <string name="settings_text_size_normal">Normal</string>
++    <string name="settings_text_size_large">Large</string>
++    <string name="settings_text_size_extra_large">Extra large</string>
+ 
+     <!-- Settings: grouped sections + admin -->
+     <string name="settings_household_section_label">Household</string>
+diff --git a/app/src/test/java/com/food/opencook/TextScaleTest.kt b/app/src/test/java/com/food/opencook/TextScaleTest.kt
+new file mode 100644
+index 0000000..02ea5d7
+--- /dev/null
++++ b/app/src/test/java/com/food/opencook/TextScaleTest.kt
+@@ -0,0 +1,51 @@
++/*
++ *  openCook
++ *  Copyright (C) 2026 olie.xdev <olie.xdeveloper@googlemail.com>
++ *
++ *  This program is free software: you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation, either version 3 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ */
++
++package com.food.opencook
++
++import com.food.opencook.data.settings.TextScale
++import org.junit.Assert.assertEquals
++import org.junit.Test
++
++class TextScaleTest {
++
++    @Test
++    fun `fromStored defaults to NORMAL when nothing is stored`() {
++        assertEquals(TextScale.NORMAL, TextScale.fromStored(null))
++    }
++
++    @Test
++    fun `fromStored defaults to NORMAL for an unrecognised value`() {
++        // Guards against a future rename/removal of a step leaving old DataStore values unreadable.
++        assertEquals(TextScale.NORMAL, TextScale.fromStored("HUGE"))
++    }
++
++    @Test
++    fun `fromStored round-trips every real step by name`() {
++        TextScale.entries.forEach { scale ->
++            assertEquals(scale, TextScale.fromStored(scale.name))
++        }
++    }
++
++    @Test
++    fun `multipliers increase with each step`() {
++        assertEquals(1.0f, TextScale.NORMAL.multiplier)
++        assert(TextScale.LARGE.multiplier > TextScale.NORMAL.multiplier)
++        assert(TextScale.EXTRA_LARGE.multiplier > TextScale.LARGE.multiplier)
++    }
++}

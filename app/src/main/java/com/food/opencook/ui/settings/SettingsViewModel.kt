@@ -27,6 +27,7 @@ import com.food.opencook.data.remote.SyncApi
 import com.food.opencook.data.remote.dto.HouseholdSettings
 import com.food.opencook.data.remote.dto.PatchHouseholdRequest
 import com.food.opencook.data.settings.SettingsRepository
+import com.food.opencook.data.settings.TextScale
 import com.food.opencook.sync.SyncEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -80,6 +81,12 @@ class SettingsViewModel @Inject constructor(
         settings.dynamicColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun setDynamicColor(enabled: Boolean) = viewModelScope.launch { settings.setDynamicColor(enabled) }
+
+    /** Text-size step for the whole app (Settings > Appearance); local to this device. */
+    val textScale: StateFlow<TextScale> =
+        settings.textScale.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TextScale.NORMAL)
+
+    fun setTextScale(scale: TextScale) = viewModelScope.launch { settings.setTextScale(scale) }
 
     /** Household-wide recipe content language (null = follow each device's system language). */
     val contentLanguage: StateFlow<String?> =

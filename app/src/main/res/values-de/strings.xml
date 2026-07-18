@@ -317,6 +317,10 @@
     <string name="settings_connect_server_hint">Foto-Scan und Familien-Sync freischalten — deine Daten bleiben erhalten.</string>
     <string name="settings_appearance_section">Darstellung</string>
     <string name="settings_dynamic_color">Material You (Systemfarben)</string>
+    <string name="settings_text_size">Textgröße</string>
+    <string name="settings_text_size_normal">Normal</string>
+    <string name="settings_text_size_large">Groß</string>
+    <string name="settings_text_size_extra_large">Sehr groß</string>
 
     <!-- Settings: grouped sections + admin -->
     <string name="settings_household_section_label">Haushalt</string>

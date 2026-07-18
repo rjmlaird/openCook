@@ -55,6 +55,20 @@ class SettingsRepository @Inject constructor(
     }
 
     /**
+     * Global text size multiplier, on top of the system font scale — mainly for reading
+     * ingredients/steps while cooking. Per-device only (not synced): unlike [contentLanguage],
+     * how big someone wants their own screen's text has nothing to do with the household's
+     * shared data, so it stays local, like [dynamicColor].
+     */
+    val textScale: Flow<TextScale> = dataStore.data.map { prefs ->
+        TextScale.fromStored(prefs[TEXT_SCALE])
+    }
+
+    suspend fun setTextScale(scale: TextScale) {
+        dataStore.edit { it[TEXT_SCALE] = scale.name }
+    }
+
+    /**
      * The user explicitly chose to use openCook on this device only — no server, no
      * household. Lets the app gate past onboarding without a household (offline-first).
      * Cleared again when a household is joined, so it always means "currently local-only".
@@ -150,6 +164,7 @@ class SettingsRepository @Inject constructor(
         val HOUSEHOLD_NAME = stringPreferencesKey("household_name")
         val HOUSEHOLD_SIZE = intPreferencesKey("household_size")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val TEXT_SCALE = stringPreferencesKey("text_scale")
         val LOCAL_ONLY = booleanPreferencesKey("local_only")
         val CONTENT_LANGUAGE = stringPreferencesKey("content_language")
         val NODE_ID = stringPreferencesKey("node_id")
@@ -175,4 +190,21 @@ object ContentLanguages {
  */
 fun interface ContentLanguageProvider {
     suspend fun effective(): String
+}
+
+/**
+ * A global text-size step applied on top of the system font scale (Settings > Appearance).
+ * Stored by [name] so adding a step later doesn't renumber existing values. Applied via
+ * [com.food.opencook.ui.theme.OpenCookTheme], which multiplies the ambient [LocalDensity]
+ * font scale — every `sp` in the app grows with it, not just cook-mode text.
+ */
+enum class TextScale(val multiplier: Float) {
+    NORMAL(1.0f),
+    LARGE(1.15f),
+    EXTRA_LARGE(1.3f),
+    ;
+
+    companion object {
+        fun fromStored(name: String?): TextScale = entries.find { it.name == name } ?: NORMAL
+    }
 }
