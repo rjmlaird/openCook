@@ -223,6 +223,8 @@
     <!-- Meal plan -->
     <string name="mealplan_title">Wochenplan</string>
     <string name="mealplan_to_shopping">Einkaufsliste erzeugen</string>
+    <string name="mealplan_export_calendar">Woche in Kalender exportieren</string>
+    <string name="mealplan_export_empty">Für diese Woche ist nichts geplant zum Exportieren</string>
     <string name="mealplan_add_recipe">Rezept hinzufügen</string>
     <string name="mealplan_smart_pick">Passendes Gericht würfeln</string>
     <string name="mealplan_pick_recipe">Rezept wählen</string>

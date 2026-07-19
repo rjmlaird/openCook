@@ -342,6 +342,7 @@ private fun ContentLanguageDialog(current: String?, onPick: (String?) -> Unit, o
     )
 }
 
+@Composable
 private fun textScaleLabel(scale: TextScale): String = when (scale) {
     TextScale.NORMAL -> stringResource(R.string.settings_text_size_normal)
     TextScale.LARGE -> stringResource(R.string.settings_text_size_large)

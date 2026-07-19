@@ -20,6 +20,7 @@ package com.food.opencook.ui.mealplan
 
 import android.content.ClipData
 import android.content.ClipDescription
+import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.draganddrop.dragAndDropSource
@@ -42,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddShoppingCart
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.foundation.layout.Spacer
@@ -115,6 +117,9 @@ import com.food.opencook.ui.components.CookedBadge
 import com.food.opencook.ui.theme.Spacing
 import java.time.LocalDate
 import com.food.opencook.util.DateLabels
+import com.food.opencook.util.IcsExport
+import com.food.opencook.util.IcsShare
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -129,8 +134,11 @@ fun MealPlanScreen(
     val selectedWeek by viewModel.selectedWeek.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val generatedMsg = stringResource(R.string.mealplan_generated)
     val noRecipesMsg = stringResource(R.string.mealplan_no_recipes_suggest)
+    val emptyExportMsg = stringResource(R.string.mealplan_export_empty)
+    val exportChooserTitle = stringResource(R.string.mealplan_export_calendar)
     val deletedMsg = stringResource(R.string.deleted)
     val undoMsg = stringResource(R.string.undo)
 
@@ -162,6 +170,18 @@ fun MealPlanScreen(
             else -> { viewModel.generateWeek() }
         }
     }
+    // One-shot .ics export of the visible week (see IcsExport for why this isn't a
+    // live subscription): nothing to export on an empty week, so just tell the user.
+    val onExport: () -> Unit = {
+        if (!hasPlan) {
+            scope.launch { snackbarHostState.showSnackbar(emptyExportMsg) }
+        } else {
+            val monday = week.first().date
+            val ics = IcsExport.buildWeekIcs(week)
+            val intent = IcsShare.shareIntent(context, ics, "opencook-meal-plan-$monday")
+            context.startActivity(Intent.createChooser(intent, exportChooserTitle))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -183,6 +203,12 @@ fun MealPlanScreen(
                         onClick = {
                             viewModel.generateShoppingList { scope.launch { snackbarHostState.showSnackbar(generatedMsg) } }
                         },
+                    )
+                    TooltipIcon(
+                        tooltip = stringResource(R.string.mealplan_export_calendar),
+                        icon = Icons.Outlined.CalendarMonth,
+                        enabled = !generating,
+                        onClick = onExport,
                     )
                 },
             )

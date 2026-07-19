@@ -221,6 +221,8 @@
     <!-- Meal plan -->
     <string name="mealplan_title">Week plan</string>
     <string name="mealplan_to_shopping">Generate shopping list</string>
+    <string name="mealplan_export_calendar">Export week to calendar</string>
+    <string name="mealplan_export_empty">Nothing planned this week to export</string>
     <string name="mealplan_add_recipe">Add recipe</string>
     <string name="mealplan_smart_pick">Roll a matching dish</string>
     <string name="mealplan_pick_recipe">Choose recipe</string>
