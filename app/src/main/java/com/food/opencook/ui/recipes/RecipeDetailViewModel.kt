@@ -22,6 +22,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.food.opencook.data.local.relation.RecipeWithDetails
+import com.food.opencook.data.remote.dto.RecipeDto
 import com.food.opencook.data.settings.SettingsRepository
 import com.food.opencook.repository.MealPlanRepository
 import com.food.opencook.repository.PantryRepository
@@ -29,6 +30,7 @@ import com.food.opencook.repository.RecipeRepository
 import com.food.opencook.repository.ShoppingRepository
 import com.food.opencook.ui.navigation.Routes
 import com.food.opencook.util.IngredientMatch
+import com.food.opencook.util.RecipeExport
 import com.food.opencook.util.WeekDates
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,6 +44,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -56,9 +59,14 @@ class RecipeDetailViewModel @Inject constructor(
     private val pantryRepository: PantryRepository,
     private val mealPlanRepository: MealPlanRepository,
     private val settings: SettingsRepository,
+    private val json: Json,
 ) : ViewModel() {
 
     private val recipeId: String = checkNotNull(savedStateHandle[Routes.ARG_RECIPE_ID])
+
+    /** Serialises the currently loaded recipe as schema.org/Recipe JSON (see [RecipeExport]),
+     *  or null if it hasn't loaded yet — export is disabled in the UI until it has. */
+    fun exportJson(): String? = recipe.value?.let { json.encodeToString(RecipeDto.serializer(), RecipeExport.toDto(it)) }
 
     /** Delete the recipe (emits a tombstone so the deletion syncs), then leave. */
     fun delete(onDeleted: () -> Unit) = viewModelScope.launch {

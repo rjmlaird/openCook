@@ -92,6 +92,8 @@
     <string name="recipes_filter_all">Alle</string>
     <string name="recipe_delete">Löschen</string>
     <string name="recipe_edit">Bearbeiten</string>
+    <string name="recipe_export">Rezept exportieren</string>
+    <string name="recipe_export_not_ready">Wird noch geladen — gleich nochmal versuchen</string>
     <string name="recipe_like">Gemocht</string>
     <string name="recipe_cookbook_label">Kochbuch</string>
     <string name="recipe_cooked_mark">Als gekocht markieren</string>

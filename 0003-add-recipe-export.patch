@@ -1,0 +1,434 @@
+diff --git a/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailScreen.kt b/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailScreen.kt
+index b1789f7..89ea82a 100644
+--- a/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailScreen.kt
++++ b/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailScreen.kt
+@@ -38,6 +38,7 @@ import androidx.compose.foundation.rememberScrollState
+ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.foundation.verticalScroll
++import android.content.Intent
+ import androidx.compose.material.icons.Icons
+ import androidx.compose.material.icons.automirrored.filled.ArrowBack
+ import androidx.compose.material.icons.filled.Favorite
+@@ -50,6 +51,7 @@ import androidx.compose.material.icons.outlined.Group
+ import androidx.compose.material.icons.automirrored.outlined.MenuBook
+ import androidx.compose.material.icons.outlined.Restaurant
+ import androidx.compose.material.icons.outlined.Schedule
++import androidx.compose.material.icons.outlined.Share
+ import androidx.compose.material3.AlertDialog
+ import androidx.compose.material3.AssistChip
+ import androidx.compose.material3.Button
+@@ -82,6 +84,7 @@ import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.remember
+ import androidx.compose.runtime.rememberCoroutineScope
+ import androidx.compose.runtime.setValue
++import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.platform.LocalView
+ import kotlinx.coroutines.launch
+ import androidx.compose.ui.Alignment
+@@ -106,6 +109,7 @@ import com.food.opencook.ui.theme.Spacing
+ import com.food.opencook.util.DateLabels
+ import com.food.opencook.util.DurationFormat
+ import com.food.opencook.util.Numbers
++import com.food.opencook.util.RecipeShare
+ import java.time.LocalDate
+ import java.time.temporal.ChronoUnit
+ 
+@@ -132,7 +136,10 @@ fun RecipeDetailScreen(
+     }
+     val snackbarHostState = remember { SnackbarHostState() }
+     val scope = rememberCoroutineScope()
++    val context = LocalContext.current
+     val addedMessage = stringResource(R.string.shopping_added)
++    val exportChooserTitle = stringResource(R.string.recipe_export)
++    val exportNotReadyMsg = stringResource(R.string.recipe_export_not_ready)
+     var showDeleteConfirm by remember { mutableStateOf(false) }
+     var showPlanSheet by remember { mutableStateOf(false) }
+     val planAddedFormat = stringResource(R.string.recipe_plan_added)
+@@ -195,6 +202,20 @@ fun RecipeDetailScreen(
+                     scrolledContainerColor = MaterialTheme.colorScheme.background,
+                 ),
+                 actions = {
++                    IconButton(
++                        onClick = {
++                            val json = viewModel.exportJson()
++                            if (json == null) {
++                                scope.launch { snackbarHostState.showSnackbar(exportNotReadyMsg) }
++                            } else {
++                                val fileNameHint = recipe?.recipe?.name?.ifBlank { null } ?: recipeId
++                                val intent = RecipeShare.shareIntent(context, json, fileNameHint)
++                                context.startActivity(Intent.createChooser(intent, exportChooserTitle))
++                            }
++                        },
++                    ) {
++                        Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.recipe_export))
++                    }
+                     IconButton(onClick = onEdit) {
+                         Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.recipe_edit))
+                     }
+diff --git a/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailViewModel.kt b/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailViewModel.kt
+index c5351b5..d43521b 100644
+--- a/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailViewModel.kt
++++ b/app/src/main/java/com/food/opencook/ui/recipes/RecipeDetailViewModel.kt
+@@ -22,6 +22,7 @@ import androidx.lifecycle.SavedStateHandle
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
+ import com.food.opencook.data.local.relation.RecipeWithDetails
++import com.food.opencook.data.remote.dto.RecipeDto
+ import com.food.opencook.data.settings.SettingsRepository
+ import com.food.opencook.repository.MealPlanRepository
+ import com.food.opencook.repository.PantryRepository
+@@ -29,6 +30,7 @@ import com.food.opencook.repository.RecipeRepository
+ import com.food.opencook.repository.ShoppingRepository
+ import com.food.opencook.ui.navigation.Routes
+ import com.food.opencook.util.IngredientMatch
++import com.food.opencook.util.RecipeExport
+ import com.food.opencook.util.WeekDates
+ import dagger.hilt.android.lifecycle.HiltViewModel
+ import kotlinx.coroutines.ExperimentalCoroutinesApi
+@@ -42,6 +44,7 @@ import kotlinx.coroutines.flow.flow
+ import kotlinx.coroutines.flow.map
+ import kotlinx.coroutines.flow.stateIn
+ import kotlinx.coroutines.launch
++import kotlinx.serialization.json.Json
+ import java.time.LocalDate
+ import javax.inject.Inject
+ 
+@@ -56,10 +59,15 @@ class RecipeDetailViewModel @Inject constructor(
+     private val pantryRepository: PantryRepository,
+     private val mealPlanRepository: MealPlanRepository,
+     private val settings: SettingsRepository,
++    private val json: Json,
+ ) : ViewModel() {
+ 
+     private val recipeId: String = checkNotNull(savedStateHandle[Routes.ARG_RECIPE_ID])
+ 
++    /** Serialises the currently loaded recipe as schema.org/Recipe JSON (see [RecipeExport]),
++     *  or null if it hasn't loaded yet — export is disabled in the UI until it has. */
++    fun exportJson(): String? = recipe.value?.let { json.encodeToString(RecipeDto.serializer(), RecipeExport.toDto(it)) }
++
+     /** Delete the recipe (emits a tombstone so the deletion syncs), then leave. */
+     fun delete(onDeleted: () -> Unit) = viewModelScope.launch {
+         repository.deleteRecipe(recipeId)
+diff --git a/app/src/main/java/com/food/opencook/util/RecipeExport.kt b/app/src/main/java/com/food/opencook/util/RecipeExport.kt
+new file mode 100644
+index 0000000..5cc64d2
+--- /dev/null
++++ b/app/src/main/java/com/food/opencook/util/RecipeExport.kt
+@@ -0,0 +1,84 @@
++/*
++ *  openCook
++ *  Copyright (C) 2026 olie.xdev <olie.xdeveloper@googlemail.com>
++ *
++ *  This program is free software: you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation, either version 3 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ */
++
++package com.food.opencook.util
++
++import com.food.opencook.data.local.relation.RecipeWithDetails
++import com.food.opencook.data.remote.dto.HowToStepDto
++import com.food.opencook.data.remote.dto.IngredientDto
++import com.food.opencook.data.remote.dto.NutritionDto
++import com.food.opencook.data.remote.dto.RecipeDto
++
++/**
++ * Turns a saved recipe back into the same schema.org/Recipe + openCook-extension shape
++ * [com.food.opencook.data.recipeimport.RecipeImportParser] reads on the way in — so an
++ * exported recipe round-trips: re-importing the file this produces (into openCook again,
++ * a household member's device, or any other app that speaks schema.org/Recipe) recreates
++ * the recipe with its structured ingredients intact, not just a flattened text blob.
++ *
++ * Images are deliberately **not** included: [com.food.opencook.data.local.entity.ImageEntity]
++ * holds either a device-local file path or a bare filename that only resolves against this
++ * household's own self-hosted server — neither is portable to whoever opens the exported
++ * file, so emitting one would be actively misleading rather than merely incomplete.
++ */
++object RecipeExport {
++
++    fun toDto(data: RecipeWithDetails): RecipeDto {
++        val recipe = data.recipe
++        return RecipeDto(
++            context = "https://schema.org",
++            type = "Recipe",
++            name = recipe.name,
++            recipeYield = recipe.recipeYield,
++            openCookServings = recipe.servings,
++            openCookCategory = recipe.category,
++            recipeIngredient = data.ingredients.sortedBy { it.position }.map { ingredientLine(it.quantity, it.unit, it.name) },
++            recipeInstructions = data.instructions.sortedBy { it.position }
++                .map { HowToStepDto(type = "HowToStep", text = it.text) },
++            openCookIngredients = data.ingredients.sortedBy { it.position }
++                .map { IngredientDto(quantity = it.quantity, unit = it.unit, name = it.name) },
++            openCookNotes = recipe.notes.orEmpty().lines().map(String::trim).filter(String::isNotEmpty),
++            openCookTags = recipe.tags.orEmpty().lines().map(String::trim).filter(String::isNotEmpty),
++            prepTime = recipe.prepTime,
++            cookTime = recipe.cookTime,
++            totalTime = recipe.totalTime,
++            nutrition = data.nutrition?.let {
++                NutritionDto(
++                    type = "NutritionInformation",
++                    calories = it.calories,
++                    proteinContent = it.proteinContent,
++                    fatContent = it.fatContent,
++                    carbohydrateContent = it.carbohydrateContent,
++                    fiberContent = it.fiberContent,
++                    sugarContent = it.sugarContent,
++                    openCookBasis = it.basis,
++                )
++            },
++            cookbook = recipe.cookbook,
++        )
++    }
++
++    /** "400 g Nudeln" / "3 Eier" / "etwas Salz" — the flattened text line kept alongside the
++     *  structured fields, for any importer that only understands plain recipeIngredient text. */
++    private fun ingredientLine(quantity: Double?, unit: String?, name: String): String =
++        listOfNotNull(quantity?.let(::formatQuantity), unit, name).joinToString(" ")
++
++    /** Room stores quantity as Double; print "400" rather than "400.0" for whole numbers. */
++    private fun formatQuantity(quantity: Double): String =
++        if (quantity == quantity.toLong().toDouble()) quantity.toLong().toString() else quantity.toString()
++}
+diff --git a/app/src/main/java/com/food/opencook/util/RecipeShare.kt b/app/src/main/java/com/food/opencook/util/RecipeShare.kt
+new file mode 100644
+index 0000000..a2d3a78
+--- /dev/null
++++ b/app/src/main/java/com/food/opencook/util/RecipeShare.kt
+@@ -0,0 +1,53 @@
++/*
++ *  openCook
++ *  Copyright (C) 2026 olie.xdev <olie.xdeveloper@googlemail.com>
++ *
++ *  This program is free software: you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation, either version 3 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ */
++
++package com.food.opencook.util
++
++import android.content.Context
++import android.content.Intent
++import androidx.core.content.FileProvider
++import java.io.File
++
++/**
++ * Writes an exported recipe (schema.org/Recipe JSON, see [RecipeExport]) to a cache file
++ * and hands back a share [Intent] for it. Same "private cache dir → content:// URI via
++ * FileProvider" pattern as [IcsShare]; kept as its own small object rather than sharing
++ * code with IcsShare so the two export features stay independent of each other.
++ */
++object RecipeShare {
++
++    /** Writes [json] under cacheDir/exports/[fileNameHint].json and returns a chooser-ready
++     *  ACTION_SEND intent for it (type "application/json" — Files, email, Drive, messaging
++     *  apps, and openCook's own recipe import all offer to handle that). [fileNameHint] is
++     *  sanitized since it's usually a recipe name, which may contain '/' or other characters
++     *  a plain File path can't. */
++    fun shareIntent(context: Context, json: String, fileNameHint: String): Intent {
++        val safeName = fileNameHint.replace(Regex("[^A-Za-z0-9-_ ]"), "_").trim().ifEmpty { "recipe" }
++        val dir = File(context.cacheDir, "exports")
++        dir.mkdirs()
++        val file = File(dir, "$safeName.json")
++        file.writeText(json)
++
++        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
++        return Intent(Intent.ACTION_SEND).apply {
++            type = "application/json"
++            putExtra(Intent.EXTRA_STREAM, uri)
++            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
++        }
++    }
++}
+diff --git a/app/src/main/res/values-de/strings.xml b/app/src/main/res/values-de/strings.xml
+index e494f83..c322365 100644
+--- a/app/src/main/res/values-de/strings.xml
++++ b/app/src/main/res/values-de/strings.xml
+@@ -92,6 +92,8 @@
+     <string name="recipes_filter_all">Alle</string>
+     <string name="recipe_delete">Löschen</string>
+     <string name="recipe_edit">Bearbeiten</string>
++    <string name="recipe_export">Rezept exportieren</string>
++    <string name="recipe_export_not_ready">Wird noch geladen — gleich nochmal versuchen</string>
+     <string name="recipe_like">Gemocht</string>
+     <string name="recipe_cookbook_label">Kochbuch</string>
+     <string name="recipe_cooked_mark">Als gekocht markieren</string>
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 66a5921..a9895af 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -93,6 +93,8 @@
+     <string name="recipes_filter_all">All</string>
+     <string name="recipe_delete">Delete</string>
+     <string name="recipe_edit">Edit</string>
++    <string name="recipe_export">Export recipe</string>
++    <string name="recipe_export_not_ready">Still loading — try again in a moment</string>
+     <string name="recipe_like">Liked</string>
+     <string name="recipe_cookbook_label">Cookbook</string>
+     <string name="recipe_cooked_mark">Mark as cooked</string>
+diff --git a/app/src/test/java/com/food/opencook/util/RecipeExportTest.kt b/app/src/test/java/com/food/opencook/util/RecipeExportTest.kt
+new file mode 100644
+index 0000000..0e95a72
+--- /dev/null
++++ b/app/src/test/java/com/food/opencook/util/RecipeExportTest.kt
+@@ -0,0 +1,141 @@
++/*
++ *  openCook
++ *  Copyright (C) 2026 olie.xdev <olie.xdeveloper@googlemail.com>
++ *
++ *  This program is free software: you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation, either version 3 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ */
++
++package com.food.opencook.util
++
++import com.food.opencook.data.local.entity.IngredientEntity
++import com.food.opencook.data.local.entity.InstructionEntity
++import com.food.opencook.data.local.entity.NutritionEntity
++import com.food.opencook.data.local.entity.RecipeEntity
++import com.food.opencook.data.local.relation.RecipeWithDetails
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++class RecipeExportTest {
++
++    private fun recipe(
++        name: String? = "Pasta Bolognese",
++        notes: String? = null,
++        tags: String? = null,
++    ) = RecipeEntity(id = "r1", name = name, notes = notes, tags = tags, createdAt = 0, updatedAt = 0)
++
++    @Test
++    fun `maps core fields and marks the schema-org type`() {
++        val data = RecipeWithDetails(
++            recipe = recipe(),
++            ingredients = emptyList(),
++            instructions = emptyList(),
++            images = emptyList(),
++            nutrition = null,
++        )
++
++        val dto = RecipeExport.toDto(data)
++
++        assertEquals("https://schema.org", dto.context)
++        assertEquals("Recipe", dto.type)
++        assertEquals("Pasta Bolognese", dto.name)
++    }
++
++    @Test
++    fun `ingredients keep structured fields and a flattened text line, ordered by position`() {
++        val data = RecipeWithDetails(
++            recipe = recipe(),
++            ingredients = listOf(
++                IngredientEntity(id = "i2", recipeId = "r1", position = 1, quantity = null, unit = null, name = "Salt, to taste"),
++                IngredientEntity(id = "i1", recipeId = "r1", position = 0, quantity = 400.0, unit = "g", name = "Pasta"),
++            ),
++            instructions = emptyList(),
++            images = emptyList(),
++            nutrition = null,
++        )
++
++        val dto = RecipeExport.toDto(data)
++
++        // Position 0 first, whole-number quantity prints without a decimal point.
++        assertEquals(listOf("400 g Pasta", "Salt, to taste"), dto.recipeIngredient)
++        assertEquals(400.0, dto.openCookIngredients[0].quantity)
++        assertEquals("g", dto.openCookIngredients[0].unit)
++        assertNull(dto.openCookIngredients[1].quantity)
++    }
++
++    @Test
++    fun `notes and tags split the stored newline-joined string back into lines`() {
++        val data = RecipeWithDetails(
++            recipe = recipe(notes = "Great with garlic bread\nFreezes well", tags = "quick\nvegetarian"),
++            ingredients = emptyList(),
++            instructions = emptyList(),
++            images = emptyList(),
++            nutrition = null,
++        )
++
++        val dto = RecipeExport.toDto(data)
++
++        assertEquals(listOf("Great with garlic bread", "Freezes well"), dto.openCookNotes)
++        assertEquals(listOf("quick", "vegetarian"), dto.openCookTags)
++    }
++
++    @Test
++    fun `instructions are ordered by position regardless of input order`() {
++        val data = RecipeWithDetails(
++            recipe = recipe(),
++            ingredients = emptyList(),
++            instructions = listOf(
++                InstructionEntity(id = "s2", recipeId = "r1", position = 1, text = "Simmer 20 minutes"),
++                InstructionEntity(id = "s1", recipeId = "r1", position = 0, text = "Brown the mince"),
++            ),
++            images = emptyList(),
++            nutrition = null,
++        )
++
++        val dto = RecipeExport.toDto(data)
++
++        assertEquals(listOf("Brown the mince", "Simmer 20 minutes"), dto.recipeInstructions.map { it.text })
++        assertTrue(dto.recipeInstructions.all { it.type == "HowToStep" })
++    }
++
++    @Test
++    fun `nutrition maps straight across and basis becomes openCookBasis`() {
++        val data = RecipeWithDetails(
++            recipe = recipe(),
++            ingredients = emptyList(),
++            instructions = emptyList(),
++            images = emptyList(),
++            nutrition = NutritionEntity(recipeId = "r1", calories = "560 kcal", basis = "pro Portion"),
++        )
++
++        val dto = RecipeExport.toDto(data)
++
++        assertEquals("560 kcal", dto.nutrition?.calories)
++        assertEquals("pro Portion", dto.nutrition?.openCookBasis)
++    }
++
++    @Test
++    fun `no nutrition row means no nutrition in the export`() {
++        val data = RecipeWithDetails(
++            recipe = recipe(),
++            ingredients = emptyList(),
++            instructions = emptyList(),
++            images = emptyList(),
++            nutrition = null,
++        )
++
++        assertNull(RecipeExport.toDto(data).nutrition)
++    }
++}
