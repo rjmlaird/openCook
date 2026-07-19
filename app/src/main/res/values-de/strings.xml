@@ -409,6 +409,8 @@
 
     <!-- Recipes list -->
     <string name="recipes_add">Rezept hinzufügen</string>
+    <string name="recipes_view_grid">Zur Rasteransicht wechseln</string>
+    <string name="recipes_view_list">Zur Listenansicht wechseln</string>
     <string name="recipes_empty_title">Noch keine Rezepte</string>
     <string name="recipes_empty_msg">Füge ein Rezept hinzu oder lege eins an.</string>
     <string name="recipes_search_empty_title">Nichts gefunden</string>

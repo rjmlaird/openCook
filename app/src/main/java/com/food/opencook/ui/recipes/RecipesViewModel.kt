@@ -21,6 +21,7 @@ package com.food.opencook.ui.recipes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.food.opencook.data.local.relation.RecipeWithDetails
+import com.food.opencook.data.settings.RecipeViewMode
 import com.food.opencook.data.settings.SettingsRepository
 import com.food.opencook.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -67,6 +69,12 @@ class RecipesViewModel @Inject constructor(
 
     val serverBaseUrl: StateFlow<String?> =
         settings.serverUrl.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** Recipe list layout (list vs. album grid); per-device, see [SettingsRepository.recipeViewMode]. */
+    val viewMode: StateFlow<RecipeViewMode> =
+        settings.recipeViewMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipeViewMode.LIST)
+
+    fun setViewMode(mode: RecipeViewMode) = viewModelScope.launch { settings.setRecipeViewMode(mode) }
 
     fun setQuery(value: String) { _query.value = value }
     fun selectCookbook(value: String?) { _cookbook.value = value }

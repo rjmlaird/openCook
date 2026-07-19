@@ -68,6 +68,16 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[TEXT_SCALE] = scale.name }
     }
 
+    /** Recipe list layout — album grid vs. the default photo-forward list. Per-device,
+     *  like [textScale]: a display preference, not household data. */
+    val recipeViewMode: Flow<RecipeViewMode> = dataStore.data.map { prefs ->
+        RecipeViewMode.fromStored(prefs[RECIPE_VIEW_MODE])
+    }
+
+    suspend fun setRecipeViewMode(mode: RecipeViewMode) {
+        dataStore.edit { it[RECIPE_VIEW_MODE] = mode.name }
+    }
+
     /**
      * The user explicitly chose to use openCook on this device only — no server, no
      * household. Lets the app gate past onboarding without a household (offline-first).
@@ -165,6 +175,7 @@ class SettingsRepository @Inject constructor(
         val HOUSEHOLD_SIZE = intPreferencesKey("household_size")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val TEXT_SCALE = stringPreferencesKey("text_scale")
+        val RECIPE_VIEW_MODE = stringPreferencesKey("recipe_view_mode")
         val LOCAL_ONLY = booleanPreferencesKey("local_only")
         val CONTENT_LANGUAGE = stringPreferencesKey("content_language")
         val NODE_ID = stringPreferencesKey("node_id")
@@ -206,5 +217,22 @@ enum class TextScale(val multiplier: Float) {
 
     companion object {
         fun fromStored(name: String?): TextScale = entries.find { it.name == name } ?: NORMAL
+    }
+}
+
+/**
+ * The recipe list's layout (Settings has no entry for this — it's a toggle right on the
+ * Recipes screen, since it's about that one screen rather than app-wide appearance).
+ * [LIST] is the existing photo-forward card, one wide tile per row, adaptive columns on
+ * larger screens. [GRID] is a denser "album" view: square image tiles, multiple columns
+ * even on a phone. See [com.food.opencook.util.RecipesLayout] for the column math.
+ */
+enum class RecipeViewMode {
+    LIST,
+    GRID,
+    ;
+
+    companion object {
+        fun fromStored(name: String?): RecipeViewMode = entries.find { it.name == name } ?: LIST
     }
 }

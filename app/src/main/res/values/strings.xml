@@ -407,6 +407,8 @@
 
     <!-- Recipes list -->
     <string name="recipes_add">Add recipe</string>
+    <string name="recipes_view_grid">Switch to grid view</string>
+    <string name="recipes_view_list">Switch to list view</string>
     <string name="recipes_empty_title">No recipes yet</string>
     <string name="recipes_empty_msg">Add a recipe or create one.</string>
     <string name="recipes_search_empty_title">Nothing found</string>
